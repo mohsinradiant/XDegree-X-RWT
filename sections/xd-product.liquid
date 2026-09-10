@@ -1,0 +1,395 @@
+{% comment %}
+  Markup copied verbatim from the supplied "product display page.html"
+  (.fbf-pdp section). Wired to Shopify natively:
+    gallery  -> product.media
+    options  -> product.options_with_values (swatches / pill radios)
+    price    -> selected variant, updates client-side on option change
+    cart     -> {% form 'product' %} posting to /cart/add
+{% endcomment %}
+{% comment %} Dawn's product form JS: AJAX add-to-cart + spinner + opens the cart drawer {% endcomment %}
+<script src="{{ 'product-form.js' | asset_url }}" defer="defer"></script>
+
+{%- liquid
+  assign v = product.selected_or_first_available_variant
+  assign on_sale = false
+  if v.compare_at_price > v.price
+    assign on_sale = true
+    assign discount = v.compare_at_price | minus: v.price | times: 100.0 | divided_by: v.compare_at_price | round
+  endif
+  assign rating = product.metafields.reviews.rating.value.rating | default: product.metafields.reviews.rating.value
+  assign rating_count = product.metafields.reviews.rating_count.value
+  assign tagline = product.metafields.custom.tagline.value | default: section.settings.tagline
+  assign series = product.metafields.custom.series.value | default: product.type | default: product.vendor
+  assign blurb = product.metafields.custom.short_description.value | default: product.description
+-%}
+
+<section class="fbf-pdp py-5" id="XdPdp-{{ section.id }}">
+  <div class="container">
+    <div class="fbf-gallery-container">
+      <div class="row g-5">
+        <!-- gallery -->
+        <div class="col-lg-6">
+          <div class="fbf-gallery position-relative">
+            <div class="rug-gallery__main">
+              {%- if product.featured_media -%}
+                <img class="" id="XdGalleryMain" src="{{ product.featured_media | image_url: width: 900 }}" alt="{{ product.featured_media.alt | escape }}">
+              {%- else -%}
+                {{ 'product-1' | placeholder_svg_tag: 'placeholder-svg' }}
+              {%- endif -%}
+            </div>
+            {%- if product.media.size > 1 -%}
+              <div class="fbf-gallery__thumbs" id="galleryThumbs">
+                {%- for media in product.media -%}
+                  <img
+                    class="fbf-gallery__thumb{% if forloop.first %} fbf-gallery__thumb--active{% endif %}"
+                    data-index="{{ forloop.index0 }}"
+                    data-full="{{ media | image_url: width: 900 }}"
+                    src="{{ media | image_url: width: 240 }}"
+                    alt="{{ media.alt | escape }}"
+                  >
+                {%- endfor -%}
+              </div>
+            {%- endif -%}
+          </div>
+        </div>
+        <!-- info -->
+        <div class="col-lg-6">
+          <div class="d-flex justify-content-between fbf-info__meta">
+            <div class="text-drak-crimson-red fs13 fw500 text-uppercase">{{ series }}</div>
+            {%- if rating != blank -%}
+              <div class="product-review">
+                <div class="review-star">
+                  {%- for i in (1..5) -%}<i class="fa-solid fa-star"></i>{%- endfor -%}
+                  <strong class="d-inline-block ms-2">{{ rating }}</strong>
+                  {%- if rating_count != blank -%}<a href="#">{{ rating_count }} {{ section.settings.reviews_label }}</a>{%- endif -%}
+                </div>
+              </div>
+            {%- endif -%}
+          </div>
+          <h1 class="fbf-info__title heading-font text-primary">{{ product.title }}</h1>
+          {%- if tagline != blank -%}
+            <div class="fbf-info__tag-line my-2">{{ tagline }}</div>
+          {%- endif -%}
+          <div class="fbf-info__price heading-font" id="XdPrice">
+            <span data-xd-price>{{ v.price | money_without_trailing_zeros }}</span>
+            {%- if on_sale -%}
+              <del data-xd-compare>{{ v.compare_at_price | money_without_trailing_zeros }}</del>
+              <span class="off" data-xd-off>&minus;{{ discount }}{{ section.settings.discount_suffix }}</span>
+            {%- else -%}
+              <del data-xd-compare hidden></del><span class="off" data-xd-off hidden></span>
+            {%- endif -%}
+          </div>
+          {%- if section.settings.tax_note != blank -%}
+            <div class="m-0 fs12 text-primary">{{ section.settings.tax_note }}</div>
+          {%- endif -%}
+
+          {%- comment -%}
+            Wrapped in Dawn's <product-form> custom element: its JS intercepts
+            the submit, adds via AJAX, toggles .loading__spinner and opens the
+            native cart drawer. It requires a <span> inside the submit button
+            and a .loading__spinner element.
+          {%- endcomment -%}
+          <product-form class="product-form" data-section-id="{{ section.id }}" data-hide-errors="false">
+          {%- form 'product', product, id: 'XdProductForm', novalidate: 'novalidate', data-type: 'add-to-cart-form' -%}
+            <input type="hidden" name="id" value="{{ v.id }}" data-xd-variant-id>
+
+            {%- unless product.has_only_default_variant -%}
+              {%- for option in product.options_with_values -%}
+                {%- assign is_color = false -%}
+                {%- assign oname = option.name | downcase -%}
+                {%- if oname contains 'color' or oname contains 'colour' -%}{%- assign is_color = true -%}{%- endif -%}
+                <div class="fbf-info__label fs12 text-uppercase fw600 mt-4 mb-2">
+                  <span class="text-primary">{{ option.name }}</span>
+                  <span data-xd-optlabel="{{ forloop.index0 }}">{{ option.selected_value }}</span>
+                </div>
+                {%- if is_color -%}
+                  <div class="d-flex gap-3 flex-wrap">
+                    {%- for value in option.values -%}
+                      {%- assign uid = 'opt-' | append: forloop.parentloop.index0 | append: '-' | append: forloop.index0 -%}
+                      <div class="color-option">
+                        <input
+                          type="radio"
+                          id="{{ uid }}"
+                          class="color-checkbox"
+                          name="xd-option-{{ forloop.parentloop.index0 }}"
+                          value="{{ value | escape }}"
+                          data-xd-option="{{ forloop.parentloop.index0 }}"
+                          {% if value == option.selected_value %}checked{% endif %}
+                        >
+                        {%- comment -%}
+                          Fill order: Shopify's native swatch, then the design's
+                          own .color-<value> token from main.css (charcoal, navy,
+                          crimson, ivory), so no colour is hardcoded in Liquid.
+                        {%- endcomment -%}
+                        <label
+                          for="{{ uid }}"
+                          class="fbf-color__opt color-{{ value | handleize }}"
+                          {% if value.swatch.color %}style="background-color: {{ value.swatch.color }};"{% endif %}
+                          title="{{ value | escape }}"
+                        ></label>
+                      </div>
+                    {%- endfor -%}
+                  </div>
+                {%- else -%}
+                  <div class="fbf-weight d-flex align-items-center gap-2 flex-wrap">
+                    {%- for value in option.values -%}
+                      {%- assign uid = 'opt-' | append: forloop.parentloop.index0 | append: '-' | append: forloop.index0 -%}
+                      <input
+                        type="radio"
+                        name="xd-option-{{ forloop.parentloop.index0 }}"
+                        id="{{ uid }}"
+                        class="weight-radio"
+                        value="{{ value | escape }}"
+                        data-xd-option="{{ forloop.parentloop.index0 }}"
+                        {% if value == option.selected_value %}checked{% endif %}
+                      >
+                      <label for="{{ uid }}" class="fbf-weight__opt">{{ value }}</label>
+                    {%- endfor -%}
+                  </div>
+                {%- endif -%}
+              {%- endfor -%}
+            {%- endunless -%}
+
+            <div class="d-flex gap-2 mt-4 fbf-buy-row">
+              <div class="fbf-qty d-flex">
+                <button type="button" class="fbf-qty__btn qty-minus" id="qtyMinus">&minus;</button>
+                <div class="fbf-qty__value qty-value" id="qtyValue">1</div>
+                <button type="button" class="fbf-qty__btn qty-plus" id="qtyPlus">+</button>
+              </div>
+              <input type="hidden" name="quantity" value="1" data-xd-qty>
+              <button
+                type="submit"
+                name="add"
+                class="fbf-cart-btn flex-grow-1"
+                data-xd-submit
+                {% if v.available == false %}disabled{% endif %}
+              >
+                <img src="{{ 'shopping-cart.png' | asset_url }}" class="me-2" alt="">
+                <span data-xd-submit-text>
+                  {%- if v.available -%}{{ section.settings.add_to_cart_label }}{%- else -%}{{ section.settings.sold_out_label }}{%- endif -%}
+                </span>
+                {%- render 'loading-spinner' -%}
+              </button>
+              <div class="product-form__error-message-wrapper" role="alert" hidden>
+                <span class="product-form__error-message"></span>
+              </div>
+            </div>
+          {%- endform -%}
+          </product-form>
+
+          <hr>
+          {%- if blurb != blank -%}
+            <p class="fbf-info__disc">{{ blurb | strip_html }}</p>
+          {%- endif -%}
+          {%- if section.blocks.size > 0 -%}
+            <div class="fbf-trust d-flex w-100 gap-2 mt-4">
+              <div class="fbf-trust-box">
+                {%- for block in section.blocks -%}
+                  <div class="fbf-trust__item" {{ block.shopify_attributes }}>
+                    <i class="{{ block.settings.icon_class }}"></i>{{ block.settings.text }}
+                  </div>
+                {%- endfor -%}
+              </div>
+            </div>
+          {%- endif -%}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{%- comment -%}
+  Prices are formatted server-side with Liquid's money filter so the client
+  never has to reimplement the shop's currency format.
+{%- endcomment -%}
+<script type="application/json" data-xd-variants="{{ section.id }}">
+  [
+    {%- for variant in product.variants -%}
+      {
+        "id": {{ variant.id }},
+        "options": {{ variant.options | json }},
+        "available": {{ variant.available }},
+        "price": {{ variant.price | money_without_trailing_zeros | json }},
+        "compare_at_price": {% if variant.compare_at_price > variant.price %}{{ variant.compare_at_price | money_without_trailing_zeros | json }}{% else %}null{% endif %},
+        "discount": {% if variant.compare_at_price > variant.price %}{{ variant.compare_at_price | minus: variant.price | times: 100.0 | divided_by: variant.compare_at_price | round }}{% else %}0{% endif %}
+      }{% unless forloop.last %},{% endunless %}
+    {%- endfor -%}
+  ]
+</script>
+<script>
+  (function () {
+    var root = document.getElementById('XdPdp-{{ section.id }}');
+    if (!root) return;
+    var form = root.querySelector('#XdProductForm');
+    var data = document.querySelector('[data-xd-variants="{{ section.id }}"]');
+    var variants = data ? JSON.parse(data.textContent) : [];
+
+    // ---- gallery: swap the main image when a thumb is clicked
+    var main = root.querySelector('#XdGalleryMain');
+    root.querySelectorAll('.fbf-gallery__thumb').forEach(function (t) {
+      t.addEventListener('click', function () {
+        if (main) main.src = t.dataset.full || t.src;
+        root.querySelectorAll('.fbf-gallery__thumb').forEach(function (o) {
+          o.classList.remove('fbf-gallery__thumb--active');
+        });
+        t.classList.add('fbf-gallery__thumb--active');
+      });
+    });
+
+    // ---- quantity (mirrors the design's jQuery handlers into the form field)
+    var qtyValue = root.querySelector('#qtyValue');
+    var qtyInput = root.querySelector('[data-xd-qty]');
+    function syncQty() { if (qtyInput && qtyValue) qtyInput.value = qtyValue.textContent.trim() || 1; }
+    var mo = qtyValue ? new MutationObserver(syncQty) : null;
+    if (mo) mo.observe(qtyValue, { childList: true, characterData: true, subtree: true });
+
+    // ---- variant matching
+    if (!form || !variants.length) return;
+    var idField = form.querySelector('[data-xd-variant-id]');
+    var priceEl = root.querySelector('[data-xd-price]');
+    var compareEl = root.querySelector('[data-xd-compare]');
+    var offEl = root.querySelector('[data-xd-off]');
+    var submit = root.querySelector('[data-xd-submit]');
+    var submitText = root.querySelector('[data-xd-submit-text]');
+
+    function selected() {
+      return Array.from(form.querySelectorAll('[data-xd-option]:checked'))
+        .sort(function (a, b) { return a.dataset.xdOption - b.dataset.xdOption; })
+        .map(function (i) { return i.value; });
+    }
+
+    function update() {
+      var chosen = selected();
+      if (!chosen.length) return;
+      var match = variants.find(function (variant) {
+        return variant.options.every(function (o, i) { return o === chosen[i]; });
+      });
+
+      root.querySelectorAll('[data-xd-optlabel]').forEach(function (el, i) {
+        if (chosen[i]) el.textContent = chosen[i];
+      });
+
+      if (!match) {
+        if (submit) submit.disabled = true;
+        if (submitText) submitText.textContent = '{{ section.settings.unavailable_label }}';
+        return;
+      }
+      if (idField) idField.value = match.id;
+      if (priceEl) priceEl.textContent = match.price;
+      if (compareEl) {
+        var sale = !!match.compare_at_price;
+        compareEl.hidden = !sale;
+        compareEl.textContent = sale ? match.compare_at_price : '';
+        if (offEl) {
+          offEl.hidden = !sale;
+          offEl.textContent = sale ? '\u2212' + match.discount + {{ section.settings.discount_suffix | json }} : '';
+        }
+      }
+      if (submit) submit.disabled = !match.available;
+      if (submitText) {
+        submitText.textContent = match.available
+          ? '{{ section.settings.add_to_cart_label }}'
+          : '{{ section.settings.sold_out_label }}';
+      }
+      if (history.replaceState) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('variant', match.id);
+        history.replaceState({}, '', url.toString());
+      }
+    }
+
+    form.addEventListener('change', function (e) {
+      if (e.target.matches('[data-xd-option]')) { syncQty(); update(); }
+    });
+    form.addEventListener('submit', syncQty);
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "XD Product",
+  "settings": [
+    {
+      "type": "text",
+      "id": "tagline",
+      "label": "Fallback tagline",
+      "info": "Used when the product has no custom.tagline metafield",
+      "default": "16mm Polymer Core \u00b7 Tournament Edition \u00b7 T700 Carbon"
+    },
+    {
+      "type": "richtext",
+      "id": "tax_note",
+      "label": "Note under price",
+      "default": "<p>Inclusive of all Taxes. <strong>Free Shipping</strong> on this Order.</p>"
+    },
+    {
+      "type": "text",
+      "id": "add_to_cart_label",
+      "label": "Add to cart label",
+      "default": "Add to Cart"
+    },
+    {
+      "type": "text",
+      "id": "sold_out_label",
+      "label": "Sold out label",
+      "default": "Sold Out"
+    },
+    {
+      "type": "text",
+      "id": "unavailable_label",
+      "label": "Unavailable label",
+      "default": "Unavailable"
+    },
+    {
+      "type": "text",
+      "id": "reviews_label",
+      "label": "Reviews link label",
+      "default": "Reviews"
+    },
+    {
+      "type": "text",
+      "id": "discount_suffix",
+      "label": "Discount badge suffix",
+      "default": "% OFF"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "trust",
+      "name": "Trust item",
+      "settings": [
+        {
+          "type": "text",
+          "id": "icon_class",
+          "label": "Font Awesome class",
+          "default": "fa-regular fa-truck"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Free Delivery"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "presets": [
+    {
+      "name": "XD Product",
+      "blocks": [
+        {
+          "type": "trust"
+        },
+        {
+          "type": "trust"
+        },
+        {
+          "type": "trust"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
+

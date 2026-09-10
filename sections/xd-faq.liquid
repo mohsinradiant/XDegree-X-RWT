@@ -1,0 +1,74 @@
+{% comment %}
+  Markup copied verbatim from the supplied faq.html (.faq-wrapper) and
+  about.html (.faqs-section, same accordion on a background image).
+  Bootstrap's collapse JS drives it - no extra script needed.
+{% endcomment %}
+{%- liquid
+  assign has_bg = false
+  if section.settings.background_image != blank
+    assign has_bg = true
+  endif
+-%}
+<section
+  class="{% if has_bg %}faqs-section{% else %}faq-wrapper{% endif %} section-tb-padding96"
+  {% if has_bg %}style="background-image: url({{ section.settings.background_image | image_url: width: 1920 }}); background-size: cover;"{% endif %}
+>
+  <div class="container custom-width">
+    {%- if section.settings.heading != blank -%}
+      <div class="section-heading text-center">
+        {%- if section.settings.eyebrow != blank -%}
+          <div class="sub-heading">{{ section.settings.eyebrow }}</div>
+        {%- endif -%}
+        <h3 class="all-heading heading-font {% if has_bg %}text-white{% else %}text-primary{% endif %}">
+          {{- section.settings.heading -}}
+        </h3>
+      </div>
+    {%- endif -%}
+    <div class="accordion fbf-accordion" id="faqAccordion-{{ section.id }}">
+      {%- for block in section.blocks -%}
+        <div class="accordion-item" {{ block.shopify_attributes }}>
+          <h2 class="accordion-header">
+            <button
+              class="accordion-button{% unless forloop.first and section.settings.open_first %} collapsed{% endunless %}"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faq-{{ block.id }}"
+            >
+              {{- block.settings.question -}}
+            </button>
+          </h2>
+          <div
+            id="faq-{{ block.id }}"
+            class="accordion-collapse collapse{% if forloop.first and section.settings.open_first %} show{% endif %}"
+            data-bs-parent="#faqAccordion-{{ section.id }}"
+          >
+            <div class="accordion-body">{{ block.settings.answer }}</div>
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD FAQ",
+  "settings": [
+    { "type": "image_picker", "id": "background_image", "label": "Background image", "info": "Leave blank for the plain FAQ page style" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "FAQ's" },
+    { "type": "text", "id": "heading", "label": "Heading" },
+    { "type": "checkbox", "id": "open_first", "label": "Open the first item", "default": false }
+  ],
+  "blocks": [
+    {
+      "type": "faq", "name": "Question",
+      "settings": [
+        { "type": "text", "id": "question", "label": "Question", "default": "What paddle is best for beginners?" },
+        { "type": "richtext", "id": "answer", "label": "Answer" }
+      ]
+    }
+  ],
+  "max_blocks": 25,
+  "presets": [{ "name": "XD FAQ", "blocks": [{ "type": "faq" }, { "type": "faq" }, { "type": "faq" }] }]
+}
+{% endschema %}

@@ -1,0 +1,53 @@
+{% comment %}
+  Markup copied verbatim from the supplied about.html (.our-story-section).
+  Body copy comes from the page content or a page metafield so it stays
+  editable outside the theme.
+{% endcomment %}
+{%- liquid
+  assign body = section.settings.text
+  if body == blank and section.settings.use_page_content
+    assign body = page.content
+  endif
+-%}
+<section class="our-story-section section-tb-padding96">
+  <div class="container custom-width">
+    <div class="row g-5">
+      <div class="col-lg-7 pe-lg-5">
+        {%- if section.settings.eyebrow != blank -%}
+          <div class="sub-heading">{{ section.settings.eyebrow }}</div>
+        {%- endif -%}
+        {%- if section.settings.heading != blank -%}
+          <h3 class="all-heading heading-font text-capitalize text-primary">{{ section.settings.heading }}</h3>
+        {%- endif -%}
+        <div class="text-primary opacity-75 xd-rte">{{ body }}</div>
+      </div>
+      <div class="col-lg-5 d-flex align-items-center">
+        <div class="bg-black p-4 rounded-3 w-100">
+          {%- if section.settings.mission_heading != blank -%}
+            <h4 class="heading-font text-white fs40 mb-4">{{ section.settings.mission_heading }}</h4>
+          {%- endif -%}
+          {%- if section.settings.mission_body != blank -%}
+            <div class="fs14 text-white-90">
+              {{ section.settings.mission_body }}
+            </div>
+          {%- endif -%}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Rich text",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Our story" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Built Different" },
+    { "type": "richtext", "id": "text", "label": "Body" },
+    { "type": "checkbox", "id": "use_page_content", "label": "Use the page's own content when body is empty", "default": true },
+    { "type": "text", "id": "mission_heading", "label": "Mission card heading", "default": "Our Mission" },
+    { "type": "richtext", "id": "mission_body", "label": "Mission card body", "default": "<p>Our mission goes beyond the paddle. We're here to grow pickleball - to welcome the beginner finding their footing, push the intermediate player to the next level, and give competitive players the edge their game demands. We believe great equipment inspires great play, and great play builds community. That is what drives every decision we make, every detail we refine, and every product we put our name on. This is Xdegree - and we're just getting started.</p>" }
+  ],
+  "presets": [{ "name": "XD Rich text" }]
+}
+{% endschema %}

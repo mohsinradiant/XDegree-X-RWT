@@ -1,0 +1,58 @@
+{% comment %}
+  Markup copied verbatim from the supplied about.html / faq.html / blog.html
+  (.inner-banner). Heading and copy fall back to the page's own content so a
+  single section serves every content page.
+{% endcomment %}
+{%- liquid
+  assign heading = section.settings.heading
+  if heading == blank
+    assign heading = page.title | default: blog.title | default: article.title
+  endif
+
+  assign subtext = section.settings.subtext
+  assign img = section.settings.image
+  if img == blank
+    assign img = page.metafields.custom.banner_image.value
+  endif
+-%}
+<section
+  class="inner-banner"
+  {% if img != blank %}
+    style="background-image: url({{ img | image_url: width: 1920 }});"
+  {% endif %}
+>
+  <div class="container custom-width">
+    <div class="inner-banner-content">
+      <div class="row">
+        <div class="col-md-4">
+          <h1 class="inner-banner-heading heading-font fw700 text-white lh100">{{ heading }}</h1>
+          {%- if subtext != blank -%}
+            <p>{{ subtext }}</p>
+          {%- endif -%}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Inner banner",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Background image",
+      "info": "Falls back to the page's custom.banner_image metafield"
+    },
+    { "type": "text", "id": "heading", "label": "Heading", "info": "Falls back to the page/blog/article title" },
+    {
+      "type": "textarea",
+      "id": "subtext",
+      "label": "Sub text",
+      "info": "Falls back to the page's custom.subheading metafield"
+    }
+  ],
+  "presets": [{ "name": "XD Inner banner" }]
+}
+{% endschema %}

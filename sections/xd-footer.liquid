@@ -1,0 +1,176 @@
+{% comment %}
+  Markup copied verbatim from the supplied index.html (footer).
+  Nav columns are driven by Shopify menus, newsletter posts to the
+  native customer form, legal links come from shop.policies.
+{% endcomment %}
+
+<footer class="footer section-t-padding96">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-6">
+        <div class="footer__logo">
+          {%- if section.settings.logo != blank -%}
+            <img src="{{ section.settings.logo | image_url: width: 660 }}" alt="{{ shop.name | escape }}">
+          {%- endif -%}
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <p class="footer__newsletter-heading text-uppercase heading-font">{{ section.settings.newsletter_heading }}</p>
+        {%- form 'customer', id: 'XdFooterNewsletter' -%}
+          <input type="hidden" name="contact[tags]" value="newsletter">
+          <div class="d-flex align-items-center justify-content-between gap-3 footer__newsletter-row">
+            <input
+              class="footer__newsletter-input"
+              type="email"
+              name="contact[email]"
+              value="{{ form.email }}"
+              placeholder="{{ section.settings.newsletter_placeholder }}"
+              required
+            >
+            <button type="submit" class="footer__newsletter-btn mt-0">{{ section.settings.newsletter_button }}</button>
+          </div>
+          {%- if form.posted_successfully? -%}
+            <p class="footer__newsletter-consent mt-2">{{ 'newsletter.success' | t }}</p>
+          {%- elsif form.errors -%}
+            <p class="footer__newsletter-consent mt-2">{{ form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email }}</p>
+          {%- endif -%}
+        {%- endform -%}
+      </div>
+    </div>
+    <div class="footer__divider my-4"></div>
+    {%- comment -%}
+      col-6 pairs the link columns below 992px. Four stacked full-width lists
+      made the footer taller than the page content it follows.
+    {%- endcomment -%}
+    <div class="row g-5 footer__nav-grid">
+      {%- for block in section.blocks -%}
+        <div class="col-6 col-lg-3" {{ block.shopify_attributes }}>
+          <p class="footer__nav-heading">{{ block.settings.heading }}</p>
+          <ul class="footer__nav-list">
+            {%- for link in block.settings.menu.links -%}
+              <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endfor -%}
+    </div>
+    <div class="footer__divider"></div>
+    <div class="footer__bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <span class="footer__legal-label text-white">{{ section.settings.legal_label }} <i class="fa-solid fa-angles-right" style="font-size:.6rem"></i></span>
+        <div class="footer__legal-links">
+          {%- for policy in shop.policies -%}
+            {%- if policy != blank -%}
+              <a href="{{ policy.url }}">{{ policy.title | escape }}</a>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      </div>
+      <div class="footer-content__social d-flex align-items-center gap-3">
+        <h5 class="fs13 lh100 heading-font text-uppercase text-white fw600 lshalf">{{ section.settings.follow_label }}</h5>
+        <div class="d-flex gap-3 flex-row">
+          {%- if settings.social_facebook_link != blank -%}
+            <a class="text-white fs20" href="{{ settings.social_facebook_link }}"><i class="transition fab fa-facebook" aria-hidden="true"></i></a>
+          {%- endif -%}
+          {%- if settings.social_twitter_link != blank -%}
+            <a class="text-white fs20" href="{{ settings.social_twitter_link }}"><i class="transition fab fa-x-twitter" aria-hidden="true"></i></a>
+          {%- endif -%}
+          {%- if settings.social_linkedin_link != blank -%}
+            <a class="text-white fs20" href="{{ settings.social_linkedin_link }}"><i class="transition fab fa-linkedin" aria-hidden="true"></i></a>
+          {%- endif -%}
+          {%- if settings.social_youtube_link != blank -%}
+            <a class="text-white fs20" href="{{ settings.social_youtube_link }}"><i class="transition fab fa-youtube" aria-hidden="true"></i></a>
+          {%- endif -%}
+        </div>
+      </div>
+    </div>
+    <div class="footer__copyright-strip d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <span class="footer__copyright">&copy; {{ 'now' | date: '%Y' }} {{ shop.name }}. {{ section.settings.rights_text }}</span>
+      <a href="#" class="footer__goto-top">{{ section.settings.top_label }} <i class="fa-solid fa-arrow-up"></i></a>
+    </div>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "XD Footer",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Footer logo"
+    },
+    {
+      "type": "header",
+      "content": "Newsletter"
+    },
+    {
+      "type": "text",
+      "id": "newsletter_heading",
+      "label": "Heading",
+      "default": "Stay Inspired"
+    },
+    {
+      "type": "text",
+      "id": "newsletter_placeholder",
+      "label": "Input placeholder",
+      "default": "Enter Your Email Address"
+    },
+    {
+      "type": "text",
+      "id": "newsletter_button",
+      "label": "Button label",
+      "default": "Subscribe"
+    },
+    {
+      "type": "text",
+      "id": "legal_label",
+      "label": "Legal label",
+      "default": "Legal"
+    },
+    {
+      "type": "text",
+      "id": "follow_label",
+      "label": "Follow us label",
+      "default": "FOLLOW US ON"
+    },
+    {
+      "type": "text",
+      "id": "rights_text",
+      "label": "Rights text",
+      "default": "All Rights Reserved."
+    },
+    {
+      "type": "text",
+      "id": "top_label",
+      "label": "Back to top label",
+      "default": "Go To Top"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "menu",
+      "name": "Menu column",
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Company"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Menu"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "enabled_on": {
+    "groups": [
+      "footer"
+    ]
+  }
+}
+{% endschema %}

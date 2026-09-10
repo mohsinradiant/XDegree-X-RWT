@@ -1,0 +1,59 @@
+{% comment %}
+  Markup copied verbatim from the supplied index.html (product-trusted section).
+{% endcomment %}
+
+<section class="product-trusted bg-black">
+  <div class="container custom-width">
+    <div class="text-center heading-font text-white fs20 text-uppercase mb-4">
+      {{ section.settings.heading }}
+    </div>
+    <div class="row">
+      <div class="col-md-7 mx-auto">
+        {%- comment -%}
+          col-6 keeps the certification logos as a 2-up grid below 992px.
+          Bare col-lg-3 stacked them into four full-width white bars, which
+          read as content blocks rather than a compact trust signal.
+        {%- endcomment -%}
+        <div class="row product-trusted__grid">
+          {%- for block in section.blocks -%}
+            <div class="col-6 col-lg-3" {{ block.shopify_attributes }}>
+              <div class="sm-logo">
+                {%- if block.settings.image != blank -%}
+                  <img src="{{ block.settings.image | image_url: width: 400 }}" class="img-fluid" alt="{{ block.settings.image.alt | escape }}">
+                {%- endif -%}
+              </div>
+            </div>
+          {%- endfor -%}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Trusted logos",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "PRODUCTS Trusted & Certified By"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "logo",
+      "name": "Logo",
+      "settings": [{ "type": "image_picker", "id": "image", "label": "Logo image" }]
+    }
+  ],
+  "max_blocks": 8,
+  "presets": [
+    {
+      "name": "XD Trusted logos",
+      "blocks": [{ "type": "logo" }, { "type": "logo" }, { "type": "logo" }, { "type": "logo" }]
+    }
+  ]
+}
+{% endschema %}

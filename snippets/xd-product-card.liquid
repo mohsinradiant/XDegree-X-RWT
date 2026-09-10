@@ -1,0 +1,134 @@
+{% comment %}
+  Renders one product card in the X-Degree design.
+  Markup copied verbatim from the supplied index.html / listing.html.
+
+  Accepts:
+    product     - {Object} the product
+    style       - {String} card layout:
+                    'default'     - image on a white tile (home "New Arrivals")
+                    'trending'    - full-bleed image (home/listing "Trending")
+                    'bestsellers' - bordered tile (home "Bestsellers", listing grid)
+    on_dark     - {Boolean} true when the section background is dark. Layout and
+                  colour are independent: the listing page uses the 'trending'
+                  layout on a LIGHT background, the homepage uses it on black.
+    show_badge  - {Boolean} render the "New Arrival" pill (trending only)
+    badge_text  - {String} pill label
+    show_rating - {Boolean} render the star rating row (listing grid)
+    buy_label   - {String} buy-button text, supplied by the calling section
+{% endcomment %}
+{%- liquid
+  assign img = product.featured_image
+  assign on_sale = false
+  if product.compare_at_price > product.price
+    assign on_sale = true
+    assign discount = product.compare_at_price | minus: product.price | times: 100.0 | divided_by: product.compare_at_price | round
+  endif
+
+  if on_dark
+    assign title_class = 'text-white-80'
+    assign price_class = 'text-white'
+    assign del_class = 'fs13 text-white-50'
+  else
+    assign title_class = 'text-primary'
+    assign price_class = 'text-primary'
+    if style == 'trending'
+      assign del_class = 'fs13 text-primary'
+    else
+      assign del_class = 'fs13 text-primary opacity-50'
+    endif
+  endif
+
+  assign price_weight = 'fw500'
+  if style == 'bestsellers'
+    assign price_weight = 'fw700'
+  endif
+-%}
+{%- liquid
+  assign buy_text = buy_label | default: 'Buy now'
+
+  # Every in-stock product adds to cart straight from the card, using the first
+  # available variant. For a product with options that is a choice made on the
+  # shopper's behalf - the cart drawer opens on success so they can see what
+  # landed and change it there.
+  assign can_add = product.available
+
+  assign card_variant = product.selected_or_first_available_variant
+
+  # The same product can appear in more than one section on a page (New
+  # Arrivals and Trending both read 'frontpage'), so the form id needs the
+  # caller's index to stay unique.
+  assign card_form_id = 'XdCardForm-' | append: product.id | append: '-' | append: card_uid
+-%}
+{%- capture card_cta -%}
+  {%- if can_add -%}
+    <product-form class="product-card-form" data-hide-errors="true">
+      {%- form 'product', product, id: card_form_id, class: 'product-card-form__form', novalidate: 'novalidate' -%}
+        <input type="hidden" name="id" value="{{ card_variant.id }}" disabled>
+        <input type="hidden" name="quantity" value="1">
+        <button type="submit" name="add" class="btn sm-btn product-card-btn btn-primary">
+          <span>{{ buy_text }}</span>
+          <span class="btn-icon"><img src="{{ 'rt-icon.svg' | asset_url }}" width="10" height="10" alt=""></span>
+          {%- render 'loading-spinner' -%}
+        </button>
+      {%- endform -%}
+    </product-form>
+  {%- else -%}
+    {%- comment -%} Sold out: nothing to add, so the card just links through. {%- endcomment -%}
+    <a class="btn sm-btn product-card-btn btn-primary is-sold-out" href="{{ product.url }}">
+      <span>{{ 'products.product.sold_out' | t }}</span>
+      <span class="btn-icon"><img src="{{ 'rt-icon.svg' | asset_url }}" width="10" height="10" alt=""></span>
+    </a>
+  {%- endif -%}
+{%- endcapture -%}
+{%- capture card_body -%}
+  {{ card_cta }}
+  {%- if show_rating and product.metafields.reviews.rating.value != blank -%}
+    {%- assign rating = product.metafields.reviews.rating.value.rating | default: product.metafields.reviews.rating.value -%}
+    <div class="product-card-rating">
+      {%- for i in (1..5) -%}<i class="fa-sharp fa-solid fa-star"></i>{%- endfor -%}
+      <span class="fs15 fw600">{{ rating }}</span>
+    </div>
+  {%- endif -%}
+  {%- unless style == 'trending' -%}
+    <div class="product-category">{{ product.type }}</div>
+  {%- endunless -%}
+  <h4 class="product-card-title my-1 fs16 fw500 {{ title_class }}">
+    <a class="product-card-link" href="{{ product.url }}">{{ product.title }}</a>
+  </h4>
+  <div class="product-card-price fs16 {{ price_class }} {{ price_weight }}">{{ product.price | money_without_trailing_zeros }} {% if on_sale %}<del class="{{ del_class }}">{{ product.compare_at_price | money_without_trailing_zeros }}</del> <span class="text-drak-crimson-red fs13 fw500">&minus;{{ discount }}%</span>{% endif %}</div>
+{%- endcapture -%}
+{%- capture card_overlay -%}
+  {%- comment -%}
+    Covers the card so a tap anywhere reaches the PDP. aria-hidden + tabindex
+    -1 because the product title above is already a real link - without this
+    the same product would be announced and tabbed to twice. The CTA is lifted
+    above it with z-index so it stays independently clickable.
+  {%- endcomment -%}
+  <a class="product-card-overlay" href="{{ product.url }}" tabindex="-1" aria-hidden="true"></a>
+{%- endcapture -%}
+{%- if style == 'trending' -%}
+  <div class="product-card trending-card-style">
+    {{ card_overlay }}
+    <div class="product-card-image position-relative p-0">
+      {%- if img != blank -%}
+        <img src="{{ img | image_url: width: 900 }}" class="img-fluid" alt="{{ img.alt | escape }}">
+      {%- else -%}
+        {{ 'product-1' | placeholder_svg_tag: 'img-fluid placeholder-svg' }}
+      {%- endif -%}
+      {%- if show_badge -%}<span class="new-arrival">{{ badge_text }}</span>{%- endif -%}
+    </div>
+    <div class="product-card-content px-0">{{ card_body }}</div>
+  </div>
+{%- else -%}
+  <div class="product-card">
+    {{ card_overlay }}
+    <div class="product-card-image">
+      {%- if img != blank -%}
+        <img src="{{ img | image_url: width: 900 }}" class="img-fluid" alt="{{ img.alt | escape }}">
+      {%- else -%}
+        {{ 'product-1' | placeholder_svg_tag: 'img-fluid placeholder-svg' }}
+      {%- endif -%}
+    </div>
+    <div class="product-card-content">{{ card_body }}</div>
+  </div>
+{%- endif -%}

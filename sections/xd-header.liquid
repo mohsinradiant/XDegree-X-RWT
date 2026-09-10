@@ -1,0 +1,175 @@
+{% comment %}
+  Markup copied verbatim from the supplied index.html (top bar + site-header).
+  Only the hard-coded values are swapped for Shopify objects:
+  logo -> settings.logo, nav items -> section.settings.menu, icons -> routes.
+{% endcomment %}
+
+<div class="top-bar py-2 bg-drak-crimson-red">
+  <div class="container custom-width">
+    <div class="row">
+      <div class="col-md-4 top-bar__support">
+        <a href="{{ section.settings.support_link | default: '#' }}" class="fs14 fw500 text-white">
+          {{- section.settings.support_text -}}
+        </a>
+      </div>
+      <div class="col-md-4 top-bar__message text-center fs14 heading-font fw500 text-white">
+        {{- section.settings.message -}}
+      </div>
+    </div>
+  </div>
+</div>
+<header class="site-header py-2">
+  <div class="container custom-width">
+    <nav class="site-header__navbar navbar navbar-expand-xl p-0">
+      <a class="site-header__brand navbar-brand" href="{{ routes.root_url }}">
+        {%- if settings.logo != blank -%}
+          <img
+            src="{{ settings.logo | image_url: width: 402 }}"
+            alt="{{ settings.logo.alt | default: shop.name | escape }}"
+            class="site-header__logo"
+          >
+        {%- endif -%}
+      </a>
+      {%- comment -%}
+        Below `navbar-expand-xl` the menu is an off-canvas drawer, not a
+        collapse. A collapse pushes the page down and leaves the nav competing
+        with the hero for the fold; a drawer keeps the header height fixed and
+        gives each link a full-width tap target.
+
+        This is Bootstrap's own responsive-offcanvas navbar pattern, so desktop
+        is unaffected: at >=1200px `.navbar-expand-xl .offcanvas` is reset to
+        `position: static; transform: none; visibility: visible` and the
+        `.offcanvas-header` is hidden, leaving the same flex row as before.
+      {%- endcomment -%}
+      <button
+        class="site-header__toggler navbar-toggler"
+        type="button"
+        data-bs-toggle="offcanvas"
+        data-bs-target="#mainNavbar"
+        aria-controls="mainNavbar"
+        aria-label="{{ 'xd.toggle_navigation' | t }}"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div
+        class="site-header__collapse site-header__drawer offcanvas offcanvas-start"
+        tabindex="-1"
+        id="mainNavbar"
+        aria-labelledby="mainNavbarLabel"
+      >
+        <div class="offcanvas-header site-header__drawer-head">
+          {%- comment -%}
+            Kept in the DOM but visually hidden: aria-labelledby needs a target
+            to name the dialog, while a drawer of nav links does not need a
+            visible "Menu" caption.
+          {%- endcomment -%}
+          <span class="offcanvas-title visually-hidden" id="mainNavbarLabel">
+            {{- 'sections.header.menu' | t -}}
+          </span>
+          <button
+            type="button"
+            class="btn-close btn-close-white"
+            data-bs-dismiss="offcanvas"
+            aria-label="{{ 'accessibility.close' | t | default: 'Close' }}"
+          ></button>
+        </div>
+        <div class="offcanvas-body site-header__drawer-body">
+          <ul class="site-header__nav navbar-nav mx-auto sm-heading">
+            {%- for link in section.settings.menu.links -%}
+              <li class="site-header__nav-item nav-item">
+                <a
+                  class="site-header__nav-link nav-link{% if link.current or link.child_active %} active{% endif %}"
+                  href="{{ link.url }}"
+                >
+                  {{- link.title | escape -}}
+                </a>
+              </li>
+            {%- endfor -%}
+          </ul>
+          {%- comment -%}
+            The top bar's support link is hidden below 768px to keep the sticky
+            header short, so it is re-surfaced here rather than lost.
+          {%- endcomment -%}
+          <div class="site-header__drawer-foot">
+            <a
+              class="site-header__drawer-account"
+              href="{% if customer %}{{ routes.account_url }}{% else %}{{ routes.account_login_url }}{% endif %}"
+            >
+              <i class="fa-regular fa-user"></i>
+              {%- if customer -%}
+                {{ 'customer.account.title' | t | default: 'Account' }}
+              {%- else -%}
+                {{ 'customer.log_in' | t | default: 'Log in' }}
+              {%- endif -%}
+            </a>
+            {%- if section.settings.support_text != blank -%}
+              <a class="site-header__drawer-support" href="{{ section.settings.support_link | default: '#' }}">
+                {{- section.settings.support_text -}}
+              </a>
+            {%- endif -%}
+          </div>
+        </div>
+      </div>
+      {%- comment -%}
+        Cart/account sit OUTSIDE .navbar-collapse. In the source build they are
+        inside it, which means they vanish on mobile until the burger menu is
+        opened (a collapsed .collapse is display:none, so children can't be
+        shown by CSS). Desktop layout is unchanged - verified pixel-identical.
+      {%- endcomment -%}
+      <div class="site-header__ecommoption d-inline-flex flex-row align-items-center gap-4 w-auto">
+        {%- comment -%}
+          id="cart-icon-bubble" is what Dawn's cart-drawer.js binds to in order
+          to open the native drawer and to re-render the item count after an
+          AJAX add. Its inner markup must match sections/cart-icon-bubble.liquid.
+        {%- endcomment -%}
+        <a class="site-header__option site-header__cart" href="{{ routes.cart_url }}" id="cart-icon-bubble">
+          {%- render 'xd-cart-icon' -%}
+        </a>
+        <a
+          class="site-header__option site-header__user"
+          href="{% if customer %}{{ routes.account_url }}{% else %}{{ routes.account_login_url }}{% endif %}"
+        >
+          <i class="fa-regular fa-user"></i>
+        </a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+{% schema %}
+{
+  "name": "XD Header",
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "default": "main-menu",
+      "label": "Menu"
+    },
+    {
+      "type": "header",
+      "content": "Top bar"
+    },
+    {
+      "type": "text",
+      "id": "support_text",
+      "label": "Left link text",
+      "default": "Customer Support"
+    },
+    {
+      "type": "url",
+      "id": "support_link",
+      "label": "Left link URL"
+    },
+    {
+      "type": "text",
+      "id": "message",
+      "label": "Center message",
+      "default": "FREE SHIPPING | LIMITED LIFETIME WARRANTY"
+    }
+  ],
+  "enabled_on": {
+    "groups": ["header"]
+  }
+}
+{% endschema %}

@@ -1,0 +1,353 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "xd-hero": {
+      "type": "xd-hero-banner",
+      "settings": {
+        "image": "shopify://shop_images/banner01.jpg",
+        "eyebrow": "New Season 2026 Collection",
+        "heading_line_1": "Built for",
+        "heading_line_2": "the",
+        "heading_highlight": "Elite.",
+        "description": "Tournament-grade paddles, courts and gear designed with athletes, engineered for the next generation of pickleball.",
+        "button_label_1": "SHOP THE COLLECTION",
+        "button_link_1": "shopify://collections/all",
+        "button_label_2": "Explore All GearS",
+        "button_link_2": "shopify://collections/all"
+      }
+    },
+    "xd-new-arrivals": {
+      "type": "xd-product-showcase",
+      "settings": {
+        "background": "black",
+        "eyebrow": "JUST DROPPED",
+        "heading": "New Arrivals",
+        "description": "Every element optimized dynamically for structural integrity and high-velocity gameplay.",
+        "collection": "frontpage",
+        "products_to_show": 4,
+        "view_all_label": "View all",
+        "view_all_link": "",
+        "layout": "grid",
+        "card_style": "default",
+        "show_badges": false,
+        "badge_text": "New Arrival",
+        "buy_label": "BUY NOW"
+      }
+    },
+    "xd-categories": {
+      "type": "xd-categories-slider",
+      "blocks": {
+        "c1": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/categories01.jpg",
+            "title": "Paddles",
+            "link": "shopify://collections/paddles"
+          }
+        },
+        "c2": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/categories02.jpg",
+            "title": "Nets",
+            "link": "shopify://collections/nets"
+          }
+        },
+        "c3": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/categories03.jpg",
+            "title": "Backpacks",
+            "link": "shopify://collections/backpacks"
+          }
+        },
+        "c4": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/categories01.jpg",
+            "title": "Balls",
+            "link": "shopify://collections/balls"
+          }
+        },
+        "c5": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/categories02.jpg",
+            "title": "Courts",
+            "link": "shopify://collections/courts"
+          }
+        },
+        "c6": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/categories03.jpg",
+            "title": "Overgrips",
+            "link": "shopify://collections/overgrips"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4",
+        "c5",
+        "c6"
+      ],
+      "settings": {
+        "eyebrow": "EVERYTHING FOR THE GAME",
+        "heading": "Shop by Categories"
+      }
+    },
+    "xd-trending": {
+      "type": "xd-product-showcase",
+      "settings": {
+        "background": "black",
+        "eyebrow": "HOT RIGHT NOW IN 2026",
+        "heading": "Trending",
+        "description": "Every element optimized dynamically for structural integrity and high-velocity gameplay.",
+        "collection": "frontpage",
+        "products_to_show": 6,
+        "view_all_label": "View all",
+        "view_all_link": "",
+        "layout": "slider",
+        "card_style": "trending",
+        "show_badges": true,
+        "badge_text": "New Arrival",
+        "buy_label": "BUY NOW"
+      }
+    },
+    "xd-set-builder": {
+      "type": "xd-set-builder",
+      "blocks": {
+        "f1": {
+          "type": "feature",
+          "settings": {
+            "text": "99% Sweet Spot, Zero Dead Spots"
+          }
+        },
+        "f2": {
+          "type": "feature",
+          "settings": {
+            "text": "Lifetime Warranty Included (Rs.8000 Value)"
+          }
+        },
+        "f3": {
+          "type": "feature",
+          "settings": {
+            "text": "Comes With Rs.900+ in Free Extras"
+          }
+        },
+        "f4": {
+          "type": "feature",
+          "settings": {
+            "text": "Current Wait Time: 2-3 Weeks"
+          }
+        }
+      },
+      "block_order": [
+        "f1",
+        "f2",
+        "f3",
+        "f4"
+      ],
+      "settings": {
+        "background_image": "shopify://shop_images/bg01.jpg",
+        "eyebrow": "Build Your Own",
+        "heading": "Pickleball Set",
+        "panel_heading": "Get Discount on your own",
+        "panel_heading_highlight": "PIckleball",
+        "panel_heading_end": "Set",
+        "panel_subtext": "CHOOSE PADDLE, BALLS & BAG oF Your Own CHoice",
+        "price_label": "Starting<br>From",
+        "price": "₹8,499",
+        "button_label": "Choose your Set",
+        "button_link": "shopify://collections/all",
+        "side_image": "shopify://shop_images/pIckleball01.png"
+      }
+    },
+    "xd-bestsellers": {
+      "type": "xd-product-showcase",
+      "settings": {
+        "background": "white",
+        "eyebrow": "Top Picks",
+        "heading": "Bestsellers",
+        "description": "Every element optimized dynamically for structural integrity and high-velocity gameplay.",
+        "collection": "frontpage",
+        "products_to_show": 6,
+        "view_all_label": "View all",
+        "view_all_link": "",
+        "layout": "slider",
+        "card_style": "bestsellers",
+        "show_badges": false,
+        "badge_text": "",
+        "buy_label": "BUY NOW"
+      }
+    },
+    "xd-why-shop": {
+      "type": "xd-why-shop",
+      "blocks": {
+        "feat1": {
+          "type": "feature",
+          "settings": {
+            "icon": "shopify://shop_images/icon01.png",
+            "title": "Performance",
+            "description": "Pro-grade gear built for precision, durability and competitive play."
+          }
+        },
+        "feat2": {
+          "type": "feature",
+          "settings": {
+            "icon": "shopify://shop_images/icon02.png",
+            "title": "Built For Clubs & Athletes",
+            "description": "Scalable pickleball solutions for players, clubs and sports facilities."
+          }
+        },
+        "feat3": {
+          "type": "feature",
+          "settings": {
+            "icon": "shopify://shop_images/icon03.png",
+            "title": "Minimal Design.<br>Maximum Functionality.",
+            "description": "Lightweight performance products with clean modern sporting aesthetics."
+          }
+        },
+        "stat1": {
+          "type": "stat",
+          "settings": {
+            "number": "25k+",
+            "description": "Active Players Using X-Degree Gear Worldwide"
+          }
+        },
+        "stat2": {
+          "type": "stat",
+          "settings": {
+            "number": "600+",
+            "description": "Indoor & Outdoor Court Installations Delivered"
+          }
+        },
+        "stat3": {
+          "type": "stat",
+          "settings": {
+            "number": "4.9/5",
+            "description": "Average Customer Satisfaction Across Products"
+          }
+        }
+      },
+      "block_order": [
+        "feat1",
+        "feat2",
+        "feat3",
+        "stat1",
+        "stat2",
+        "stat3"
+      ],
+      "settings": {
+        "background_image": "shopify://shop_images/bg02.jpg",
+        "eyebrow": "Why Shop with",
+        "heading": "X-Degree",
+        "center_image": "shopify://shop_images/why01.png"
+      }
+    },
+    "xd-trusted": {
+      "type": "xd-trusted-logos",
+      "blocks": {
+        "l1": {
+          "type": "logo",
+          "settings": {
+            "image": "shopify://shop_images/sm-logo01.png"
+          }
+        },
+        "l2": {
+          "type": "logo",
+          "settings": {
+            "image": "shopify://shop_images/sm-logo02.png"
+          }
+        },
+        "l3": {
+          "type": "logo",
+          "settings": {
+            "image": "shopify://shop_images/sm-logo03.png"
+          }
+        },
+        "l4": {
+          "type": "logo",
+          "settings": {
+            "image": "shopify://shop_images/sm-logo04.png"
+          }
+        }
+      },
+      "block_order": [
+        "l1",
+        "l2",
+        "l3",
+        "l4"
+      ],
+      "settings": {
+        "heading": "PRODUCTS Trusted & Certified By"
+      }
+    },
+    "xd-trust-bar": {
+      "type": "xd-trust-bar",
+      "blocks": {
+        "i1": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon04.png",
+            "label": "Tournament Grade Quality",
+            "description": "Built for competitive performance and durability."
+          }
+        },
+        "i2": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon05.png",
+            "label": "Global Shipping",
+            "description": "Fast and secure worldwide product delivery."
+          }
+        },
+        "i3": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon06.png",
+            "label": "Professional Court Solutions",
+            "description": "Indoor and outdoor court systems for all facilities."
+          }
+        },
+        "i4": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon07.png",
+            "label": "Premium Player Support",
+            "description": "Expert assistance for players, clubs and institutions."
+          }
+        }
+      },
+      "block_order": [
+        "i1",
+        "i2",
+        "i3",
+        "i4"
+      ],
+      "settings": {}
+    }
+  },
+  "order": [
+    "xd-hero",
+    "xd-new-arrivals",
+    "xd-categories",
+    "xd-trending",
+    "xd-set-builder",
+    "xd-bestsellers",
+    "xd-why-shop",
+    "xd-trusted",
+    "xd-trust-bar"
+  ]
+}

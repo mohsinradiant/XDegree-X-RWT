@@ -1,0 +1,123 @@
+{% comment %}
+  Markup copied verbatim from the supplied "product display page.html"
+  (.product-description-section). Bootstrap tabs.
+
+  Each tab is a block whose body can come from the product description, a
+  product metafield (so copy varies per product) or fixed text typed into
+  the theme editor.
+{% endcomment %}
+{%- if section.blocks.size > 0 -%}
+  <section class="product-description-section bg-light section-tb-padding96 pt-0 mt-5">
+    <div class="container custom-width">
+      <div class="product-tabs">
+        {%- comment -%}
+          The bar is wrapped so the mobile edge-fade can be painted on a static
+          element. Put on the scroller itself it would scroll away with the
+          tabs; on the wrapper it stays pinned to the right edge.
+        {%- endcomment -%}
+        <div class="product-tabs__bar">
+        <ul class="nav nav-tabs border-0" id="myTab" role="tablist">
+          {%- for block in section.blocks -%}
+            <li class="nav-item" role="presentation" {{ block.shopify_attributes }}>
+              <button
+                class="nav-link heading-font{% if forloop.first %} active{% endif %}"
+                id="xd-tab-{{ block.id }}"
+                data-bs-toggle="tab"
+                data-bs-target="#xd-pane-{{ block.id }}"
+                type="button"
+                role="tab"
+              >
+                {{- block.settings.label -}}
+              </button>
+            </li>
+          {%- endfor -%}
+        </ul>
+        </div>
+        <div class="tab-content p-4">
+          {%- for block in section.blocks -%}
+            {%- liquid
+              assign body = blank
+              assign mf = blank
+              if block.settings.source == 'description'
+                assign body = product.description
+              elsif block.settings.source == 'metafield'
+                assign key = block.settings.metafield | split: '.'
+                assign mf = product.metafields[key[0]][key[1]]
+                if mf == blank
+                  assign body = block.settings.text
+                endif
+              else
+                assign body = block.settings.text
+              endif
+            -%}
+            {%- comment -%}
+              The product description already ships its own .col-* grid (the
+              Story tab is a two-column text + image layout), so it goes
+              straight into the .row. Metafield / fixed-text bodies have no
+              grid of their own and get a full-width column.
+            {%- endcomment -%}
+            <div
+              class="tab-pane fade{% if forloop.first %} show active{% endif %}"
+              id="xd-pane-{{ block.id }}"
+              role="tabpanel"
+            >
+              <div class="row text-primary">
+                {%- if block.settings.source == 'description' -%}
+                  {{ body }}
+                {%- else -%}
+                  <div class="col-md-12 text-primary">
+                    {%- comment -%}
+                      A rich_text_field has to go through `metafield_tag`;
+                      outputting it (or its `.value`) dumps raw JSON instead.
+                    {%- endcomment -%}
+                    {%- if mf != blank -%}{{ mf | metafield_tag }}{%- else -%}{{ body }}{%- endif -%}
+                  </div>
+                {%- endif -%}
+              </div>
+            </div>
+          {%- endfor -%}
+        </div>
+      </div>
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "XD Product tabs",
+  "blocks": [
+    {
+      "type": "tab",
+      "name": "Tab",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Tab label", "default": "The Story" },
+        {
+          "type": "select",
+          "id": "source",
+          "label": "Content source",
+          "options": [
+            { "value": "description", "label": "Product description" },
+            { "value": "metafield", "label": "Product metafield" },
+            { "value": "text", "label": "Fixed text" }
+          ],
+          "default": "text"
+        },
+        {
+          "type": "text",
+          "id": "metafield",
+          "label": "Metafield (namespace.key)",
+          "default": "custom.tech_specs"
+        },
+        { "type": "richtext", "id": "text", "label": "Fixed text" }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "XD Product tabs",
+      "blocks": [{ "type": "tab" }, { "type": "tab" }, { "type": "tab" }]
+    }
+  ]
+}
+{% endschema %}

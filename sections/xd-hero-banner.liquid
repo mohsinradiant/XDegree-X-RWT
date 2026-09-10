@@ -1,0 +1,202 @@
+{% comment %}
+  Markup based on the supplied index.html (hero_banner section).
+
+  Changed vs source: the background is an <img> inside a <picture> rather than
+  a CSS background-image. A 3840x1306 landscape crop has nothing usable left
+  once a phone viewport squeezes it, so the section needs a second, portrait
+  crop - and art direction between two different images is exactly what
+  <picture><source media> is for. It also lets the browser pick a width from
+  srcset instead of always pulling the 3840px file, which is the single
+  biggest mobile win on this page.
+
+  Desktop renders identically: .hero_banner__img is object-fit: cover with
+  object-position: center right, matching the old background-size/position.
+{% endcomment %}
+{%- liquid
+  assign desktop_image = section.settings.image
+  assign mobile_image = section.settings.image_mobile
+
+  # No silent fallback to the desktop crop below 768px. A 3840x1306 landscape
+  # cover-cropped into a ~390x645 portrait box has to scale until its HEIGHT
+  # fills, so it renders ~1900 CSS px wide - roughly 5x the viewport. `sizes`
+  # would have to lie wildly for the browser to fetch anything sharp enough,
+  # and even then you are looking at 20% of the middle of the photo. Show the
+  # placeholder instead, so the missing asset is visible rather than shipped.
+  assign has_mobile_art = false
+  if mobile_image != blank
+    assign has_mobile_art = true
+  endif
+
+  assign media_class = 'hero_banner__media'
+  if has_mobile_art == false
+    assign media_class = 'hero_banner__media hero_banner__media--needs-mobile-art'
+  endif
+-%}
+
+<section class="hero_banner section-tb-padding96 position-relative">
+  <div class="{{ media_class }}">
+    {%- if desktop_image != blank -%}
+      <picture class="hero_banner__pic">
+        {%- if has_mobile_art -%}
+          {%- comment -%}
+            Only emitted when a real portrait crop exists. sizes="100vw" is
+            honest here: a portrait image in a portrait box renders at about
+            the viewport width.
+          {%- endcomment -%}
+          <source
+            media="(max-width: 767.98px)"
+            srcset="
+              {{ mobile_image | image_url: width: 600 }} 600w,
+              {{ mobile_image | image_url: width: 900 }} 900w,
+              {{ mobile_image | image_url: width: 1200 }} 1200w,
+              {{ mobile_image | image_url: width: 1600 }} 1600w
+            "
+            sizes="100vw"
+            width="{{ mobile_image.width }}"
+            height="{{ mobile_image.height }}"
+          >
+        {%- endif -%}
+        <img
+          src="{{ desktop_image | image_url: width: 1920 }}"
+          srcset="
+            {{ desktop_image | image_url: width: 1200 }} 1200w,
+            {{ desktop_image | image_url: width: 1600 }} 1600w,
+            {{ desktop_image | image_url: width: 1920 }} 1920w,
+            {{ desktop_image | image_url: width: 2560 }} 2560w,
+            {{ desktop_image | image_url: width: 3840 }} 3840w
+          "
+          sizes="100vw"
+          width="{{ desktop_image.width }}"
+          height="{{ desktop_image.height }}"
+          alt="{{ desktop_image.alt | escape }}"
+          class="hero_banner__img"
+          fetchpriority="high"
+        >
+      </picture>
+    {%- endif -%}
+
+    {%- unless has_mobile_art -%}
+      {%- comment -%}
+        Shown below 768px only (see xd-responsive.css). `slice` is injected
+        because placeholder_svg_tag has no way to pass preserveAspectRatio, and
+        the default `meet` would letterbox the placeholder inside the hero.
+      {%- endcomment -%}
+      <div class="hero_banner__placeholder">
+        {{- 'lifestyle-1'
+          | placeholder_svg_tag: 'hero_banner__placeholder-svg'
+          | replace: '<svg', '<svg preserveAspectRatio="xMidYMid slice"'
+        -}}
+      </div>
+    {%- endunless -%}
+  </div>
+  {%- comment -%}
+    On desktop the copy sits over the naturally dark left third of the photo.
+    A phone crop has no such guarantee, so a scrim carries the contrast.
+    Strength is tuned per breakpoint in xd-responsive.css.
+  {%- endcomment -%}
+  <div class="hero_banner__scrim"></div>
+  <div class="container custom-width position-relative">
+    <div class="row">
+      <div class="col-lg-4">
+        {%- comment -%}
+          data-xd-hero marks the children xd-animations.js staggers in on load.
+        {%- endcomment -%}
+        <div class="hero_banner--widget" data-xd-hero>
+          <div class="hero-banner--sub-title heading-font">{{ section.settings.eyebrow }}</div>
+          <h2 class="hero_banner--title">
+            {{ section.settings.heading_line_1 }} <br>{{ section.settings.heading_line_2 }}
+            <em class="text-drak-crimson-red fw400">{{ section.settings.heading_highlight }}</em>
+          </h2>
+          <div class="text-white-80 mt-2">{{ section.settings.description }}</div>
+          <div class="mt-5 d-flex gap-3">
+            <a
+              href="{{ section.settings.button_link_1 | default: '#' }}"
+              class="hero_banner--btn heading-font btn btn-primary"
+            >
+              {{ section.settings.button_label_1 }}
+              <span class="btn-icon"><img src="{{ 'rt-icon.svg' | asset_url }}" alt=""></span>
+            </a>
+            <a
+              href="{{ section.settings.button_link_2 | default: '#' }}"
+              class="hero_banner--btn heading-font btn btn-outline-accent"
+            >
+              {{ section.settings.button_label_2 }} <i class="fa-regular fa-arrow-right-long"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Hero banner",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Background image (desktop)",
+      "info": "Recommended 3840 x 1306px (landscape). Used on screens 768px and wider."
+    },
+    {
+      "type": "image_picker",
+      "id": "image_mobile",
+      "label": "Background image (mobile)",
+      "info": "Recommended 900 x 1200px (portrait), with the subject on the right and clear space on the left for the heading. Used below 768px. Falls back to the desktop image if left empty."
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow text",
+      "default": "New Season 2026 Collection"
+    },
+    {
+      "type": "text",
+      "id": "heading_line_1",
+      "label": "Heading line 1",
+      "default": "Built for"
+    },
+    {
+      "type": "text",
+      "id": "heading_line_2",
+      "label": "Heading line 2",
+      "default": "the"
+    },
+    {
+      "type": "text",
+      "id": "heading_highlight",
+      "label": "Heading highlighted word",
+      "default": "Elite."
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Description"
+    },
+    {
+      "type": "text",
+      "id": "button_label_1",
+      "label": "Button 1 label",
+      "default": "SHOP THE COLLECTION"
+    },
+    {
+      "type": "url",
+      "id": "button_link_1",
+      "label": "Button 1 link"
+    },
+    {
+      "type": "text",
+      "id": "button_label_2",
+      "label": "Button 2 label",
+      "default": "Explore All GearS"
+    },
+    {
+      "type": "url",
+      "id": "button_link_2",
+      "label": "Button 2 link"
+    }
+  ],
+  "presets": [{ "name": "XD Hero banner" }]
+}
+{% endschema %}

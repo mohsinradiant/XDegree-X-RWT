@@ -1,0 +1,46 @@
+{% comment %}
+  Markup copied verbatim from the supplied "product display page.html"
+  (.breadcrumb-wrap), including the custom chevron divider.
+  Trail is built natively: Home > collection > series > current page.
+{% endcomment %}
+{%- liquid
+  assign col = collection
+  if col == blank and product != blank
+    assign col = product.collections.first
+  endif
+  assign series = product.metafields.custom.series.value
+-%}
+<div class="breadcrumb-wrap border-top py-2">
+  <div class="container">
+    <nav style="--bs-breadcrumb-divider: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%228%22 height=%228%22 viewBox=%220 0 8 8%22%3E%3Cpath d=%22M2 1L5 4L2 7%22 fill=%22none%22 stroke=%22%23C6622E%22 stroke-width=%221%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E');" aria-label="{{ 'xd.breadcrumb' | t }}">
+      <ol class="breadcrumb mb-0 fs13">
+        <li class="breadcrumb-item"><a href="{{ routes.root_url }}">{{ section.settings.home_label }}</a></li>
+        {%- if product != blank -%}
+          {%- if col != blank -%}
+            {%- assign col_label = col.metafields.custom.heading.value | default: col.title -%}
+            <li class="breadcrumb-item"><a href="{{ col.url }}">{{ col_label | escape }}</a></li>
+          {%- endif -%}
+          {%- if series != blank -%}
+            <li class="breadcrumb-item"><a href="{{ col.url | default: routes.all_products_collection_url }}">{{ series | escape }}</a></li>
+          {%- endif -%}
+          <li class="breadcrumb-item active" aria-current="page">{{ product.title | escape }}</li>
+        {%- elsif collection != blank -%}
+          <li class="breadcrumb-item active" aria-current="page">{{ collection.title | escape }}</li>
+        {%- elsif page != blank -%}
+          <li class="breadcrumb-item active" aria-current="page">{{ page.title | escape }}</li>
+        {%- endif -%}
+      </ol>
+    </nav>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "XD Breadcrumb",
+  "settings": [
+    { "type": "text", "id": "home_label", "label": "Home label", "default": "Home" }
+  ],
+  "presets": [{ "name": "XD Breadcrumb" }]
+}
+{% endschema %}
+

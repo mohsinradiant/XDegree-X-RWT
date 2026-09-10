@@ -1,0 +1,84 @@
+{% comment %}
+  Markup copied verbatim from the supplied register.html (.register-wrapper).
+  Posts through Shopify's native contact form so submissions arrive as
+  store notifications - no third-party endpoint needed.
+{% endcomment %}
+<section class="register-wrapper bg-light">
+  <div class="register-container position-relative">
+    {%- if section.settings.image != blank -%}
+      <figure class="register-image" style="background-image: url({{ section.settings.image | image_url: width: 1600 }});">
+        <img src="{{ section.settings.image | image_url: width: 1600 }}" alt="{{ section.settings.image.alt | escape }}">
+      </figure>
+    {%- endif -%}
+    <div class="container">
+      <div class="row justify-content-end">
+        <div class="col-md-5 py-5">
+          <div class="register-form">
+            <h4 class="text-center fs30 heading-font mb-5 text-primary fw800">{{ section.settings.heading }}</h4>
+            {%- form 'contact', class: 'w-100' -%}
+              {%- if form.posted_successfully? -%}
+                <p class="form__message fs14 text-center mb-3">{{ section.settings.success_text }}</p>
+              {%- elsif form.errors -%}
+                <p class="form__message fs14 text-center mb-3 text-drak-crimson-red">
+                  {{ form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email }}
+                </p>
+              {%- endif -%}
+              <div class="form-group mb-3">
+                <input type="text" name="contact[name]" class="form-control" placeholder="{{ section.settings.name_label }}" required>
+              </div>
+              <div class="form-group mb-3">
+                <input type="email" name="contact[email]" class="form-control" placeholder="{{ section.settings.email_label }}" required>
+              </div>
+              <div class="form-group mb-3">
+                <input type="tel" name="contact[phone]" class="form-control" placeholder="{{ section.settings.phone_label }}">
+              </div>
+              {%- for block in section.blocks -%}
+                <div class="form-group mb-3" {{ block.shopify_attributes }}>
+                  <select name="contact[{{ block.settings.label | handleize }}]" class="form-control">
+                    <option value="">{{ block.settings.label }}</option>
+                    {%- assign opts = block.settings.options | split: ',' -%}
+                    {%- for o in opts -%}
+                      <option value="{{ o | strip | escape }}">{{ o | strip }}</option>
+                    {%- endfor -%}
+                  </select>
+                </div>
+              {%- endfor -%}
+              <div class="form-group">
+                <button type="submit" class="btn w-100 sm-btn product-card-btn submit-btn btn-primary">
+                  <span class="text-center">{{ section.settings.button_label }}</span>
+                  <span class="btn-icon"><img src="{{ 'rt-icon.svg' | asset_url }}" alt=""></span>
+                </button>
+              </div>
+            {%- endform -%}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Register",
+  "settings": [
+    { "type": "image_picker", "id": "image", "label": "Side image" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Fill out the information below to register your paddle" },
+    { "type": "text", "id": "name_label", "label": "Name placeholder", "default": "Name" },
+    { "type": "text", "id": "email_label", "label": "Email placeholder", "default": "Email" },
+    { "type": "text", "id": "phone_label", "label": "Phone placeholder", "default": "Phone No." },
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "submit" },
+    { "type": "text", "id": "success_text", "label": "Success message", "default": "Thanks - your paddle registration has been received." }
+  ],
+  "blocks": [
+    {
+      "type": "select", "name": "Dropdown",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label / placeholder", "default": "Country" },
+        { "type": "textarea", "id": "options", "label": "Options (comma separated)", "default": "India, United States, United Kingdom" }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "presets": [{ "name": "XD Register", "blocks": [{ "type": "select" }, { "type": "select" }] }]
+}
+{% endschema %}

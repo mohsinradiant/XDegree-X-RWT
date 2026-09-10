@@ -1,0 +1,638 @@
+/*
+  Brand styling for Shopify's NATIVE cart drawer (Dawn's <cart-drawer>), the
+  add-to-cart spinner and the header count bubble.
+
+  Dawn keeps ownership of the drawer's behaviour and markup - we only take over
+  the line-item layout and typography, because two things from the design build
+  break Dawn's defaults:
+
+  1. Dawn lays a line item out as `grid-template: repeat(2, auto) / repeat(4, 1fr)`.
+     The line-item <img> carries width="150", and a percentage max-width is
+     ignored while a grid track measures min-content, so the image track refuses
+     to go below 150px. Together with Dawn's `.cart-item__details > * { max-width: 30rem }`
+     the row's min-content ends up wider than the 400px panel - hence the
+     horizontal scrollbar and the product title collapsing to one character
+     per line.
+  2. Bootstrap (loaded after Dawn's base.css) restyles bare headings and .h4, so
+     `h2.totals__total` resolved to calc(1.325rem + .9vw) and the item title to
+     calc(1.275rem + .3vw) - both far larger than the panel was built for.
+
+  Fix: an explicit three-track row (image / details / line total) with the
+  quantity row underneath, and every size pinned in px against the design's
+  16px body scale rather than Dawn's 10px rem root.
+
+  Selectors are prefixed `cart-drawer .cart-drawer` on purpose: Dawn's own rules
+  are `.cart-drawer X`, so the extra element selector keeps us one step ahead on
+  specificity without !important. This file is also loaded after
+  component-cart-drawer.css - see layout/theme.liquid.
+*/
+
+/* ---------- design tokens ---------- */
+cart-drawer {
+  --xd-ink: #231f20;
+  --xd-muted: #4a5656;
+  --xd-faint: #a2a2a2;
+  --xd-line: #e9e9e9;
+  --xd-red: #d50032;
+  --xd-green: #00ac75;
+  --xd-heading: "Space Grotesk", sans-serif;
+  --xd-body: "Inter", sans-serif;
+  --xd-gutter: 20px;
+  --xd-media: 76px;
+  --xd-col-gap: 14px;
+}
+
+/* ---------- header cart bubble ---------- */
+.site-header__cart { position: relative; }
+
+.xd-cart-bubble {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 20px;
+  background: #d50032;
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* ---------- panel ---------- */
+/*
+  Dawn sizes the panel at 40rem against its own 10px root. Pin it so the panel
+  and its contents are measured against the same number.
+*/
+/*
+  One gutter for the whole panel. Dawn puts 1.5rem on .drawer__inner and then
+  lets the header, the items table and the footer add their own insets, which
+  is what left the column labels sitting proud of the line items.
+*/
+cart-drawer .cart-drawer .drawer__inner {
+  width: 400px;
+  max-width: calc(100vw - 30px);
+  padding: 0 var(--xd-gutter);
+  border-radius: 0;
+  background: #fff;
+}
+
+cart-drawer .cart-drawer .drawer__contents,
+cart-drawer .cart-drawer .drawer__cart-items-wrapper,
+cart-drawer .cart-drawer .cart-items,
+cart-drawer .cart-drawer .cart-drawer__footer {
+  padding-left: 0;
+  padding-right: 0;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+cart-drawer.drawer,
+cart-drawer .drawer {
+  overflow: hidden;
+}
+
+/* Nothing inside the panel may cause sideways scroll. */
+cart-drawer .cart-drawer cart-drawer-items,
+cart-drawer .cart-drawer .drawer__contents,
+cart-drawer .cart-drawer .drawer__cart-items-wrapper {
+  overflow-x: hidden;
+}
+
+/* ---------- drawer header ---------- */
+/* No rule here - the column-label row below is the separator. */
+cart-drawer .cart-drawer .drawer__header {
+  padding: 20px 0 16px;
+  border-bottom: 0;
+}
+
+cart-drawer .cart-drawer .drawer__heading {
+  margin: 0;
+  font-family: var(--xd-heading);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--xd-ink);
+}
+
+/*
+  Dawn absolutely positions the close button, which drops it below the heading
+  once the header padding changes. The header is already a flex row - let the
+  button sit in it.
+*/
+cart-drawer .cart-drawer .drawer__close {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  margin-right: -10px;
+  box-shadow: none;
+  color: var(--xd-ink);
+}
+
+cart-drawer .cart-drawer .drawer__close .svg-wrapper,
+cart-drawer .cart-drawer .drawer__close svg {
+  width: 16px;
+  height: 16px;
+}
+
+cart-drawer .cart-drawer .drawer__close:hover { color: var(--xd-red); }
+
+/* ---------- column labels ---------- */
+/*
+  Dawn renders the head as its own inline-table, so it cannot share the row's
+  tracks. Give it the same explicit template instead, and drop the two
+  screen-reader-only cells that would otherwise take a column each.
+*/
+cart-drawer .cart-drawer .cart-items thead {
+  display: block;
+  margin: 0;
+}
+
+/* One continuous rule under the labels, not one segment per cell. */
+cart-drawer .cart-drawer .cart-items thead tr {
+  display: grid;
+  grid-template-columns: var(--xd-media) minmax(0, 1fr) auto;
+  column-gap: var(--xd-col-gap);
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--xd-line);
+}
+
+cart-drawer .cart-drawer .cart-items thead th {
+  padding: 0;
+  border-bottom: 0;
+  font-family: var(--xd-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--xd-faint);
+  opacity: 1;
+}
+
+cart-drawer .cart-drawer .cart-items thead th:nth-child(1) { grid-area: 1 / 1; width: auto; padding: 0; }
+cart-drawer .cart-drawer .cart-items thead th:nth-child(2) { grid-area: 1 / 2; width: auto; padding-left: 0; }
+cart-drawer .cart-drawer .cart-items thead th:nth-child(3) { grid-area: 1 / 3; width: auto; text-align: right; }
+/*
+  The quantity label is screen-reader-only and is the target of the quantity
+  cell's headers="" reference, so it stays in the accessibility tree - it is
+  collapsed onto the image column rather than display:none'd.
+*/
+cart-drawer .cart-drawer .cart-items thead th:nth-child(4) {
+  grid-area: 1 / 1;
+  width: 0;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* ---------- line item ---------- */
+cart-drawer .cart-drawer .cart-item {
+  display: grid;
+  grid-template-columns: var(--xd-media) minmax(0, 1fr) auto;
+  grid-template-areas:
+    "media details total"
+    "media qty     qty";
+  gap: 12px var(--xd-col-gap);
+  align-items: start;
+  padding: 18px 0;
+  margin: 0;
+  border-bottom: 1px solid var(--xd-line);
+}
+
+cart-drawer .cart-drawer .cart-item:last-child {
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+
+/* Dawn pads the cells for its own track layout; the grid gaps do it here. */
+cart-drawer .cart-drawer .cart-items td,
+cart-drawer .cart-drawer .cart-item > td + td {
+  padding: 0;
+}
+
+/* Every cell must be allowed to shrink below its content width. */
+cart-drawer .cart-drawer .cart-item > td { min-width: 0; }
+
+/* media */
+cart-drawer .cart-drawer .cart-item__media {
+  grid-area: media;
+  width: var(--xd-media);
+}
+
+cart-drawer .cart-drawer .cart-item__image {
+  display: block;
+  width: var(--xd-media);
+  max-width: var(--xd-media);
+  height: auto;
+  border-radius: 8px;
+  background: #f6f6f6;
+}
+
+/* details */
+cart-drawer .cart-drawer .cart-item__details {
+  grid-area: details;
+  width: auto;
+  min-width: 0;
+  font-family: var(--xd-body);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+cart-drawer .cart-drawer .cart-item__details > * {
+  max-width: 100%;
+  margin: 0;
+}
+
+cart-drawer .cart-drawer .cart-item__details > * + * { margin-top: 5px; }
+
+cart-drawer .cart-drawer .cart-item__title {
+  display: block;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+cart-drawer .cart-drawer .cart-item__name,
+cart-drawer .cart-drawer .cart-item__name.h4 {
+  display: block;
+  font-family: var(--xd-body);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0;
+  color: var(--xd-ink);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+cart-drawer .cart-drawer .cart-item__name:hover { color: var(--xd-red); }
+
+/* variant options / line properties */
+cart-drawer .cart-drawer .cart-item__details dl { margin: 0; }
+
+cart-drawer .cart-drawer .cart-item__details .product-option {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--xd-faint);
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+cart-drawer .cart-drawer .cart-item__details .product-option dt,
+cart-drawer .cart-drawer .cart-item__details .product-option dd {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* per-unit price, shown under the title when the line is discounted */
+cart-drawer .cart-drawer .cart-item__details .cart-item__discounted-prices {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+}
+
+cart-drawer .cart-drawer .cart-item__old-price { color: var(--xd-faint); }
+cart-drawer .cart-drawer .cart-item__final-price { color: var(--xd-ink); font-weight: 600; }
+
+/* line total */
+cart-drawer .cart-drawer .cart-item__totals {
+  grid-area: total;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  min-width: 0;
+  text-align: right;
+}
+
+cart-drawer .cart-drawer .cart-item__price-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+cart-drawer .cart-drawer .cart-item__totals .price {
+  font-family: var(--xd-body);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--xd-ink);
+}
+
+cart-drawer .cart-drawer .cart-item__totals s.price {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--xd-faint);
+}
+
+cart-drawer .cart-drawer .cart-item__totals .unit-price {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--xd-faint);
+}
+
+/* quantity row */
+cart-drawer .cart-drawer .cart-items .cart-item__quantity {
+  grid-area: qty;
+  padding: 0;
+  min-width: 0;
+}
+
+cart-drawer .cart-drawer .cart-item__quantity-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+cart-drawer .cart-drawer .quantity {
+  width: 108px;
+  min-width: 108px;
+  height: 36px;
+  min-height: 36px;
+  border-radius: 40px;
+  border: 1px solid var(--xd-line);
+  background: #fff;
+  overflow: hidden;
+}
+
+cart-drawer .cart-drawer .quantity:after { box-shadow: none; }
+
+cart-drawer .cart-drawer .quantity__button {
+  width: 32px;
+  height: 34px;
+  flex: 0 0 32px;
+  color: var(--xd-ink);
+}
+
+cart-drawer .cart-drawer .quantity__button:hover { color: var(--xd-red); }
+
+cart-drawer .cart-drawer .quantity__button svg,
+cart-drawer .cart-drawer .quantity__button .svg-wrapper {
+  width: 10px;
+  height: 10px;
+}
+
+cart-drawer .cart-drawer .quantity__input {
+  height: 34px;
+  padding: 0;
+  border-radius: 0;
+  font-family: var(--xd-body);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--xd-ink);
+}
+
+/* remove - an icon button, sized to sit level with the stepper */
+cart-drawer .cart-drawer cart-remove-button {
+  display: flex;
+  margin: 0;
+  width: auto;
+  height: auto;
+}
+
+cart-drawer .cart-drawer .cart-remove-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--xd-line);
+  border-radius: 50%;
+  background: none;
+  color: var(--xd-faint);
+}
+
+cart-drawer .cart-drawer .cart-remove-button:not([disabled]):hover {
+  border-color: var(--xd-red);
+  color: var(--xd-red);
+}
+
+cart-drawer .cart-drawer .cart-remove-button svg,
+cart-drawer .cart-drawer .cart-remove-button .svg-wrapper {
+  width: 14px;
+  height: 14px;
+}
+
+cart-drawer .cart-drawer .cart-item__error-text {
+  font-size: 11px;
+  color: var(--xd-red);
+}
+
+/* ---------- footer ---------- */
+cart-drawer .cart-drawer .drawer__footer {
+  padding: 16px 0 20px;
+  border-top: 1px solid var(--xd-line);
+  background: #fff;
+}
+
+cart-drawer .cart-drawer .drawer__footer summary,
+cart-drawer .cart-drawer .drawer__footer .summary__title {
+  font-family: var(--xd-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--xd-ink);
+}
+
+cart-drawer .cart-drawer .cart__note .text-area {
+  font-family: var(--xd-body);
+  font-size: 13px;
+  border-radius: 8px;
+}
+
+cart-drawer .cart-drawer .totals {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 6px;
+}
+
+/*
+  .totals__total is an <h2>, which Bootstrap resizes to calc(1.325rem + .9vw).
+  Pin it.
+*/
+cart-drawer .cart-drawer .totals__total {
+  margin: 0;
+  font-family: var(--xd-heading);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--xd-ink);
+}
+
+cart-drawer .cart-drawer .totals__total-value {
+  margin: 0;
+  font-family: var(--xd-body);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--xd-ink);
+}
+
+cart-drawer .cart-drawer .tax-note {
+  display: block;
+  margin: 0 0 14px;
+  font-family: var(--xd-body);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--xd-faint);
+}
+
+cart-drawer .cart-drawer .tax-note a { color: var(--xd-muted); text-decoration: underline; }
+
+cart-drawer .cart-drawer .discounts__discount {
+  font-family: var(--xd-body);
+  font-size: 12px;
+  color: var(--xd-green);
+}
+
+/* Checkout button in the design's pill style */
+cart-drawer .cart-drawer .cart__ctas { margin: 0; }
+
+cart-drawer .cart-drawer .cart__checkout-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  height: 52px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 40px;
+  background-color: var(--xd-green);
+  color: #fff;
+  font-family: var(--xd-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/*
+  Dawn draws the button's border/shadow on a ::after box that uses
+  --buttons-radius-outset (0px on this store), which would ring the pill with a
+  square outline. Match it to the pill or remove it.
+*/
+cart-drawer .cart-drawer .cart__checkout-button:after {
+  box-shadow: none;
+  border: 0;
+  border-radius: 40px;
+}
+
+cart-drawer .cart-drawer .cart__checkout-button:hover:not([disabled]) {
+  background-color: var(--xd-red);
+  color: #fff;
+}
+
+cart-drawer .cart-drawer .cart__checkout-button[disabled] { opacity: 0.4; }
+
+/* ---------- empty state ---------- */
+cart-drawer .cart-drawer .drawer__inner-empty { padding: 0 var(--xd-gutter); }
+
+cart-drawer.is-empty .cart-drawer .drawer__inner { padding: 0; }
+
+cart-drawer .cart-drawer .cart__empty-text {
+  font-family: var(--xd-heading);
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--xd-ink);
+}
+
+cart-drawer .cart-drawer .drawer__inner-empty .button {
+  min-height: 0;
+  height: 52px;
+  padding: 0 32px;
+  border: 0;
+  border-radius: 40px;
+  background-color: var(--xd-green);
+  color: #fff;
+  font-family: var(--xd-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+cart-drawer .cart-drawer .drawer__inner-empty .button:after {
+  box-shadow: none;
+  border: 0;
+  border-radius: 40px;
+}
+
+cart-drawer .cart-drawer .drawer__inner-empty .button:hover {
+  background-color: var(--xd-red);
+  color: #fff;
+}
+
+cart-drawer .cart-drawer .cart-drawer__empty-content > * + * { margin-top: 20px; }
+
+/* ---------- narrow phones ---------- */
+@media (max-width: 400px) {
+  cart-drawer {
+    --xd-gutter: 16px;
+    --xd-media: 64px;
+    --xd-col-gap: 12px;
+  }
+
+  cart-drawer .cart-drawer .drawer__inner { width: 100vw; max-width: 100vw; }
+
+  cart-drawer .cart-drawer .quantity { width: 100px; min-width: 100px; }
+}
+
+/* ---------- add-to-cart spinner ---------- */
+.fbf-cart-btn { position: relative; }
+
+.fbf-cart-btn .loading__spinner {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px;
+  width: 16px;
+  height: 16px;
+}
+
+.fbf-cart-btn .loading__spinner.hidden { display: none; }
+
+.fbf-cart-btn .loading__spinner .spinner { width: 16px; height: 16px; }
+.fbf-cart-btn .loading__spinner .path { stroke: #fff; }
+
+.fbf-cart-btn.loading { opacity: 0.9; cursor: progress; }
+
+.product-form__error-message-wrapper[hidden] { display: none; }
+
+.product-form__error-message-wrapper {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #d50032;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fbf-cart-btn .loading__spinner .spinner { animation-duration: 2s; }
+}

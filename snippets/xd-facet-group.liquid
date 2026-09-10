@@ -1,0 +1,299 @@
+{% comment %}
+  One accordion group in the collection sidebar.
+
+  Extracted from xd-collection-grid so that a single Shopify filter can be
+  rendered as SEVERAL groups. That is what `prefix` is for: Material, Player
+  Level, Playing Style and Weight all arrive as one "Product tags" filter whose
+  values read "Material: Carbon Fiber", "Level: Advanced" and so on, and this
+  snippet renders the slice of them sharing one prefix, with the prefix stripped
+  off the visible label.
+
+  Why tags and not metafields, since the store has metafields for exactly these
+  four things: Shopify INTERSECTS multiple values of a list-metafield filter.
+  Ticking Carbon Fiber and Graphite asks for paddles that are both, which is no
+  paddle at all - measured on this store: Graphite 3, Carbon Fiber 2, together
+  0. Tag values are ORed, which is what multi-select has to mean. The metafields
+  are still there and still correct; they are just not what the sidebar reads.
+
+  Accepts:
+    filter        - a collection filter (drop from collection.filters)
+    prefix        - blank for a whole filter; otherwise the tag prefix to slice
+    group_label   - accordion header text
+    style         - price | swatch | rating | checkbox
+    panel_id      - unique id for the collapse target
+    show_count    - render each value's result count
+    rating_suffix - text after the stars ("& Up")
+    design_colours- comma list of colour handles main.css already paints
+{% endcomment %}
+{%- liquid
+  assign design_colour_list = design_colours | split: ','
+  assign separator = ': '
+
+  # How many of this group's values are on. Price is one control rather than a
+  # set, so its badge is 0 or 1.
+  assign group_active = 0
+  if filter.type == 'price_range'
+    if filter.min_value.value != blank or filter.max_value.value != blank
+      assign group_active = 1
+    endif
+  else
+    for value in filter.active_values
+      if prefix == blank
+        assign group_active = group_active | plus: 1
+      else
+        assign value_prefix = value.label | split: separator | first
+        if value_prefix == prefix
+          assign group_active = group_active | plus: 1
+        endif
+      endif
+    endfor
+  endif
+-%}
+<div class="accordion-item" data-xd-group="{{ panel_id }}">
+  <h2 class="accordion-header">
+    <button
+      class="accordion-button heading-font"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#{{ panel_id }}"
+    >
+      {{- group_label | escape -}}
+      {%- comment -%}
+        Multi-select is only obvious if the group says how many of its values
+        are on while it is collapsed.
+      {%- endcomment -%}
+      <span class="xd-facet-group-count" data-xd-group-count {% if group_active == 0 %}hidden{% endif %}>
+        {{- group_active -}}
+      </span>
+    </button>
+  </h2>
+  <div id="{{ panel_id }}" class="accordion-collapse collapse show" data-bs-parent="#filterAccordion">
+    {%- case style -%}
+      {%- when 'price' -%}
+        <div class="accordion-body">
+          <div class="price-values d-flex justify-content-between mb-2">
+            <span data-xd-price-min>{{ filter.min_value.value | default: 0 | money_without_trailing_zeros }}</span>
+            <span data-xd-price-max>{{ filter.max_value.value | default: filter.range_max | money_without_trailing_zeros }}</span>
+          </div>
+          {%- comment -%}
+            Shopify states money in cents; the slider works in whole currency
+            units, so both ends are divided by 100 here and multiplied back in
+            the JS label.
+          {%- endcomment -%}
+          <span class="multi-range">
+            <input
+              type="range"
+              min="0"
+              max="{{ filter.range_max | divided_by: 100 }}"
+              value="{{ filter.min_value.value | default: 0 | divided_by: 100 }}"
+              id="lower"
+              name="{{ filter.min_value.param_name }}"
+              form="XdFacetForm"
+              data-xd-price
+            >
+            <input
+              type="range"
+              min="0"
+              max="{{ filter.range_max | divided_by: 100 }}"
+              value="{{ filter.max_value.value | default: filter.range_max | divided_by: 100 }}"
+              id="upper"
+              name="{{ filter.max_value.param_name }}"
+              form="XdFacetForm"
+              data-xd-price
+            >
+          </span>
+        </div>
+
+      {%- when 'swatch' -%}
+        {%- comment -%}
+          Colour chips.
+
+          The design ships an exact class per colour (.color-charcoal,
+          .color-navy, .color-crimson, .color-ivory in main.css), so the value's
+          handle is emitted as a class and those win when they exist. Any colour
+          without a design class falls back to the swatch Shopify serves, and
+          failing that to a neutral chip - so a new colour added in the admin
+          still renders something sensible.
+        {%- endcomment -%}
+        <div class="accordion-body ps-3">
+          <div class="d-flex gap-3 flex-wrap">
+            {%- for value in filter.values -%}
+              {%- liquid
+                assign label = value.label
+                assign in_group = true
+                if prefix != blank
+                  assign value_prefix = label | split: separator | first
+                  if value_prefix == prefix
+                    assign label = label | remove_first: prefix | remove_first: separator
+                  else
+                    assign in_group = false
+                  endif
+                endif
+              -%}
+              {%- if in_group -%}
+                {%- liquid
+                  assign input_id = panel_id | append: '-' | append: forloop.index
+                  assign colour_handle = label | handleize
+                  assign colour_class = colour_handle | prepend: 'color-'
+
+                  # An inline style would outrank the design's class, so it is
+                  # only emitted for colours the design does not already paint.
+                  assign chip = ''
+                  unless design_colour_list contains colour_handle
+                    if value.swatch.image
+                      assign chip_image = value.swatch.image | image_url: width: 100
+                      capture chip
+                        echo 'background-image:url(' | append: chip_image | append: ');background-size:cover;background-position:center;'
+                      endcapture
+                    elsif value.swatch.color
+                      capture chip
+                        echo 'background-color:rgb(' | append: value.swatch.color.rgb | append: ');'
+                      endcapture
+                    endif
+                  endunless
+                -%}
+                <div class="color-option">
+                  <input
+                    type="checkbox"
+                    class="color-checkbox"
+                    id="{{ input_id }}"
+                    form="XdFacetForm"
+                    name="{{ value.param_name }}"
+                    value="{{ value.value | escape }}"
+                    data-xd-facet-input
+                    data-xd-count="{{ value.count }}"
+                    {% if value.active %}checked{% endif %}
+                    {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                  >
+                  <label
+                    for="{{ input_id }}"
+                    class="fbf-color__opt {{ colour_class }}{% if chip == blank %} fbf-color__opt--blank{% endif %}"
+                    {% if chip != blank %}style="{{ chip }}"{% endif %}
+                    title="{{ label | escape }}"
+                  >
+                    <span class="visually-hidden">
+                      {{- label | escape }} (<span data-xd-count-text>{{ value.count }}</span>)
+                    </span>
+                  </label>
+                </div>
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+        </div>
+
+      {%- when 'rating' -%}
+        {%- comment -%}
+          Star rows. The value label is a number once the prefix is off
+          ("Rating: 4" -> "4"), so it is drawn as full/half/empty stars; if
+          something non-numeric arrives the label is printed as-is.
+        {%- endcomment -%}
+        <div class="accordion-body ps-3">
+          <div class="product-review">
+            {%- for value in filter.values -%}
+              {%- liquid
+                assign label = value.label
+                assign in_group = true
+                if prefix != blank
+                  assign value_prefix = label | split: separator | first
+                  if value_prefix == prefix
+                    assign label = label | remove_first: prefix | remove_first: separator
+                  else
+                    assign in_group = false
+                  endif
+                endif
+              -%}
+              {%- if in_group -%}
+                {%- liquid
+                  assign input_id = panel_id | append: '-' | append: forloop.index
+                  assign score = label | times: 1.0
+                  assign full_stars = score | floor
+                  assign has_half = false
+                  assign fraction = score | minus: full_stars
+                  if fraction >= 0.5
+                    assign has_half = true
+                  endif
+                  assign half_index = full_stars | plus: 1
+                -%}
+                <label class="review-star d-block mb-2{% if value.active %} is-active{% endif %}" for="{{ input_id }}">
+                  <input
+                    type="checkbox"
+                    class="visually-hidden"
+                    id="{{ input_id }}"
+                    form="XdFacetForm"
+                    name="{{ value.param_name }}"
+                    value="{{ value.value | escape }}"
+                    data-xd-facet-input
+                    data-xd-count="{{ value.count }}"
+                    {% if value.active %}checked{% endif %}
+                    {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                  >
+                  {%- if score > 0 -%}
+                    {%- for i in (1..5) -%}
+                      {%- if i <= full_stars -%}
+                        <i class="fa-solid fa-star" aria-hidden="true"></i>
+                      {%- elsif i == half_index and has_half -%}
+                        <i class="fa-duotone fa-solid fa-star-half" aria-hidden="true"></i>
+                      {%- else -%}
+                        <i class="fa-regular fa-star" aria-hidden="true"></i>
+                      {%- endif -%}
+                    {%- endfor -%}
+                    <strong class="d-inline-block ms-2">{{ rating_suffix }}</strong>
+                  {%- else -%}
+                    <strong class="d-inline-block">{{ label | escape }}</strong>
+                  {%- endif -%}
+                  {%- if show_count -%}
+                    <span class="ms-1">(<span data-xd-count-text>{{ value.count }}</span>)</span>
+                  {%- endif -%}
+                </label>
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+        </div>
+
+      {%- else -%}
+        <div class="accordion-body ps-3">
+          <ul class="list-unstyled m-0">
+            {%- for value in filter.values -%}
+              {%- liquid
+                assign label = value.label
+                assign in_group = true
+                if prefix != blank
+                  assign value_prefix = label | split: separator | first
+                  if value_prefix == prefix
+                    assign label = label | remove_first: prefix | remove_first: separator
+                  else
+                    assign in_group = false
+                  endif
+                endif
+              -%}
+              {%- if in_group -%}
+                {%- assign input_id = panel_id | append: '-' | append: forloop.index -%}
+                <li class="mb-2">
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="{{ input_id }}"
+                      form="XdFacetForm"
+                      name="{{ value.param_name }}"
+                      value="{{ value.value | escape }}"
+                      data-xd-facet-input
+                      data-xd-count="{{ value.count }}"
+                      {% if value.active %}checked{% endif %}
+                      {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                    >
+                    <label class="form-check-label filter-link d-flex justify-content-between align-items-center w-100" for="{{ input_id }}">
+                      {{ label | escape }}
+                      {%- if show_count -%}
+                        <span data-xd-count-text>{{ value.count }}</span>
+                      {%- endif -%}
+                    </label>
+                  </div>
+                </li>
+              {%- endif -%}
+            {%- endfor -%}
+          </ul>
+        </div>
+    {%- endcase -%}
+  </div>
+</div>

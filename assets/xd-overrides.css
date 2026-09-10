@@ -1,0 +1,617 @@
+/*
+  X-Degree <-> Dawn bridge.
+
+  xd-bootstrap.css and xd-main.css are the untouched design files. This file
+  only neutralises Dawn defaults that would otherwise bleed into them.
+  Put design changes in the source HTML build and re-copy - not here.
+*/
+
+/*
+  Dawn sets html{font-size: calc(var(--font-body-scale) * 62.5%)} => 10px root.
+  Bootstrap is authored against a 16px root and is almost entirely rem-based,
+  so a 10px root silently shrinks every Bootstrap gutter, padding and column
+  gap by 37.5%. The design build runs at the browser default, so restore it.
+*/
+html {
+  font-size: 16px;
+}
+
+/*
+  Dawn's inline <style> in theme.liquid loads before these stylesheets and
+  sets properties main.css never declares, so they survive and distort the
+  design (notably letter-spacing, which offsets every line of text).
+*/
+body {
+  display: block;
+  letter-spacing: normal;
+  line-height: 1.6;
+}
+
+/*
+  Dawn's base.css targets the heading ELEMENTS directly:
+
+      h1,h2,h3,h4,h5,.h0..h5 {
+        font-family: var(--font-heading-family);      => Assistant, not Inter
+        font-style:  var(--font-heading-style);
+        letter-spacing: calc(var(--font-heading-scale) * 0.06rem);
+        color: rgb(var(--color-foreground));
+        word-break: break-word;
+      }
+
+  main.css only sets the font on html/body, and an inherited value can never
+  beat a rule aimed at the element, so every <h1>-<h5> in the design picked up
+  Dawn's font AND ~0.96px of extra letter-spacing per character - enough to
+  push product card titles onto a second line. Reset the lot to inherit so the
+  design's own cascade applies, exactly as it does in the standalone build.
+  The design's .heading-font / .heading-font2 classes still win on specificity,
+  so Space Grotesk / Albert Sans headings are unaffected.
+*/
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: inherit;
+  font-style: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  word-break: normal;
+}
+
+/* Dawn's colour-scheme classes force their own bg/text onto our sections. */
+body.gradient {
+  background: #ffffff;
+  color: #a2a2a2;
+}
+
+/*
+  Dawn's base.css hides every empty element:
+      a:empty, ul:empty, div:empty, section:empty, p:empty, h1:empty ... { display: none }
+  The design legitimately uses empty <div>s as structural elements - the
+  footer's horizontal rules and the Swiper pagination container (which is
+  empty until Swiper injects bullets). Re-show those.
+*/
+/* NB: Dawn's `div:empty` is specificity (0,1,1); a bare class (0,1,0) loses
+   to it no matter the load order, so each selector carries :empty too. */
+.footer__divider:empty,
+.footer__logo-rule:empty,
+.container-fluid:empty,
+.swiper-pagination:empty,
+/*
+  Bootstrap's off-canvas backdrop is an empty <div> it injects at the end of
+  <body>, so Dawn's rule hid it outright - the mobile nav drawer opened with no
+  dim, no blur, and nothing catching taps outside it.
+*/
+.offcanvas-backdrop:empty,
+/*
+  Same trap: the product card's click overlay is an empty <a> stretched over
+  the card, and `a:empty` above hid it - so tapping the card image or price did
+  nothing and only the title link worked.
+*/
+.product-card-overlay:empty {
+  display: block;
+}
+
+/* Dawn wraps every section in .shopify-section; it must not create spacing. */
+.shopify-section {
+  margin: 0;
+  padding: 0;
+}
+
+/* The design's own <header>/<footer> replace Dawn's, so drop Dawn's spacing. */
+#MainContent {
+  margin: 0;
+}
+
+/*
+  Collection pagination. The static design build had no pagination (it showed a
+  fixed set of cards), so this is styled to match the design's filter links and
+  pill buttons rather than copied from source.
+*/
+.xd-pager__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 50px;
+  border: solid 1px rgb(35 31 32 / 14%);
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #231f20;
+  text-decoration: none;
+}
+
+.xd-pager__link:hover,
+.xd-pager__link.is-active {
+  background-color: #d50032;
+  border-color: #d50032;
+  color: #fff;
+}
+
+/*
+  Product gallery main image.
+  main.css never sizes it, so it rendered at the source image's natural width.
+  That happened to look right for the static design's single hero shot, but
+  swapping in any other image (e.g. a narrower infographic) collapsed it.
+  Filling the container keeps every image the same size - and reproduces the
+  design's 447px exactly, since that is the container's inner width.
+*/
+.rug-gallery__main img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/*
+  Product gallery thumbs.
+  main.css sizes them at a fixed 119px with `justify-content: space-between`,
+  which is exact for the five images the static design ships. A real product
+  can have any number, and flex's default shrink squashed them. Pin the size
+  and let the strip scroll instead - five still lays out identically.
+*/
+.fbf-gallery__thumbs {
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.fbf-gallery__thumb {
+  flex: 0 0 auto;
+  cursor: pointer;
+  object-fit: contain;
+}
+
+/*
+  Product tab bodies.
+  These come from rich_text metafields, so they render as bare <ul>/<h4>/<p>
+  and cannot carry the design's utility classes (.product-description-list,
+  .heading-font.fs20.fw700.text-primary, ...). Re-apply the design's own
+  values by scope so metafield-driven copy looks identical to the static
+  build while staying editable in the admin.
+  Values copied from main.css - do not invent new ones here.
+*/
+.product-description-section .metafield-rich_text_field ul {
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.product-description-section .metafield-rich_text_field ul li {
+  width: 50%;
+  position: relative;
+  padding-left: 20px;
+  font-size: 14px;
+  color: #382b2a;
+  margin: 4px 0;
+}
+
+.product-description-section .metafield-rich_text_field ul li:after {
+  width: 8px;
+  height: 8px;
+  background-color: #d81921;
+  position: absolute;
+  content: '';
+  left: 0;
+  border-radius: 50%;
+  top: 8px;
+}
+
+.product-description-section .metafield-rich_text_field h1,
+.product-description-section .metafield-rich_text_field h2,
+.product-description-section .metafield-rich_text_field h3,
+.product-description-section .metafield-rich_text_field h4,
+.product-description-section .metafield-rich_text_field h5 {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 24px;
+  font-weight: 500;
+  color: #231f20;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.product-description-section .metafield-rich_text_field p {
+  color: #231f20;
+}
+
+#xd-pane-t4 .metafield-rich_text_field h4, #xd-pane-t5 .metafield-rich_text_field h4 {
+  border-top: solid 1px #00000020;
+  padding-top: 15px;
+  margin-top: 15px;
+}
+
+#xd-pane-t4 .metafield-rich_text_field h4:first-of-type, #xd-pane-t5 .metafield-rich_text_field h4:first-of-type,#xd-pane-t5 .metafield-rich_text_field h4:nth-of-type(2) {
+  border: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+/* 767.98px, not 756: Bootstrap's own md edge, so this lands with the columns
+   stacking rather than 12px after it. See the breakpoint note in
+   xd-responsive.css. */
+@media (max-width: 767.98px) {
+  .product-description-section .metafield-rich_text_field ul li {
+    width: 100%;
+  }
+}
+
+/*
+  Search results filters, 750-989px.
+
+  Dawn swaps its filter drawer for an inline grid at 750px. That grid is
+  measured in rem against Dawn's own 10px root - which the rule at the top of
+  this file restores to the 16px browser default for Bootstrap's sake - so in
+  that band it lays out about 1.6x its intended size and runs past the
+  viewport. Measured at 768px: page 768, document 816, i.e. the search page was
+  the one page on the site that scrolled sideways on a tablet.
+
+  Dawn's drawer is the same component every phone already gets and it is built
+  to be narrow, so it covers this band too. Bounded by Dawn's own edges rather
+  than Bootstrap's: these are Dawn's utilities and its 990px rule takes the
+  drawer away again above them.
+*/
+@media screen and (min-width: 750px) and (max-width: 989px) {
+  #MainContent .facets.small-hide {
+    display: none !important;
+  }
+
+  #MainContent .mobile-facets__wrapper.medium-hide {
+    display: flex !important;
+  }
+}
+
+/*
+  Native policy pages (/policies/*).
+  Shopify renders these with its own fixed .shopify-policy__* markup and
+  ignores custom templates, so the design's privacy-policy layout is applied
+  by CSS instead. Values mirror .privacy-policy-section in the source build:
+  centred heading, then a light rounded content card at col-md-8 width.
+*/
+.shopify-policy__container {
+  max-width: 1320px;
+  margin: 3rem auto;
+  padding: 0 12px;
+}
+
+.shopify-policy__title {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.shopify-policy__title h1 {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 64px;
+  font-weight: 700;
+  letter-spacing: -4%;
+  text-transform: capitalize;
+  color: #231f20;
+}
+
+.shopify-policy__body {
+  max-width: 66.6667%;
+  margin: 0 auto;
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+  padding: 3rem 1.5rem;
+  color: #231f20;
+}
+
+.shopify-policy__body .rte h4 {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 24px;
+  font-weight: 500;
+  color: #231f20;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.shopify-policy__body .rte p {
+  color: #231f20;
+  margin-bottom: 1rem;
+}
+
+/* The two edges below are the same ones xd-responsive.css uses, so a policy
+   page steps down at the same widths as every other page on the site. The
+   sizes are the --xd-fs-h3 token's two values, restated because these rules
+   sit outside the block that declares it. */
+@media (max-width: 767.98px) {
+  .shopify-policy__container {
+    margin: var(--xd-m-section-y, 56px) auto;
+    padding: 0 16px;
+  }
+
+  .shopify-policy__title h1 {
+    font-size: 32px;
+    line-height: 1.05;
+  }
+
+  .shopify-policy__title {
+    margin-bottom: 24px;
+  }
+
+  .shopify-policy__body {
+    max-width: 100%;
+    padding: 24px 18px;
+    border-radius: 16px;
+  }
+
+  .shopify-policy__body .rte p,
+  .shopify-policy__body .rte li {
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
+  .shopify-policy__body .rte h4 {
+    font-size: 21px;
+    line-height: 1.3;
+  }
+}
+
+@media (max-width: 479.98px) {
+  .shopify-policy__title h1 {
+    font-size: 27px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Collection filters
+
+   The supplied collection page.html hard-codes four colour chips and never
+   hides their checkboxes (the design only styles .color-checkbox:checked +
+   .fbf-color__opt). Live filters come from Search & Discovery, so the chips are
+   generated and the raw inputs have to be taken out of the flow here.
+--------------------------------------------------------------------------- */
+.filter-box .color-option {
+  position: relative;
+  line-height: 0;
+}
+
+.filter-box .color-checkbox {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A colour with no swatch configured in the admin still needs a visible chip. */
+.filter-box .fbf-color__opt--blank {
+  background-color: #efefef;
+  border: 1px solid #d9d9d9;
+}
+
+.filter-box .color-checkbox:focus-visible+.fbf-color__opt {
+  outline: 2px solid #231f20;
+  outline-offset: 2px;
+}
+
+.filter-box .color-checkbox:disabled+.fbf-color__opt {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/*
+  Active / exhausted states. The link selector has to outrank the design's own
+  `.filter-box .accordion-item .accordion-body ul li a` colour rule.
+*/
+.filter-box .accordion-item .accordion-body ul li a.filter-link.is-active,
+.filter-box .form-check-input:checked+.filter-link {
+  color: #d50032;
+  font-weight: 700;
+}
+
+.filter-box .accordion-item .accordion-body ul li a.filter-link.is-active span {
+  color: #d50032;
+}
+
+.filter-box .form-check-input:disabled+.filter-link {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/*
+  Dawn's base.css sets `input[type='checkbox'] { width: auto }`, and an
+  attribute selector outranks Bootstrap's `.form-check-input { width: 1em }`.
+  With Bootstrap's appearance:none the box then collapses to its two 1px
+  borders - a 2px sliver that reads as a vertical line. Restore a real box.
+*/
+.filter-box .form-check .form-check-input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 0.15em;
+  margin-right: 0;
+  border: 1px solid #cfcfcf;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.filter-box .form-check .form-check-input[type='checkbox']:checked {
+  background-color: #d50032;
+  border-color: #d50032;
+}
+
+.filter-box .form-check .form-check-input[type='checkbox']:focus {
+  border-color: #d50032;
+  box-shadow: 0 0 0 3px rgba(213, 0, 50, 0.15);
+}
+
+/* Bootstrap indents the label by 1.5em; ours is a fixed 18px box. */
+.filter-box .form-check {
+  padding-left: 28px;
+  min-height: 0;
+}
+
+.filter-box .form-check .form-check-input[type='checkbox'] {
+  margin-left: -28px;
+}
+
+/* Rating rows are labels wrapping a hidden checkbox. */
+.filter-box .review-star {
+  cursor: pointer;
+}
+
+.filter-box .review-star .fa-regular {
+  color: #d9d9d9;
+}
+
+.filter-box .review-star.is-active strong {
+  color: #d50032;
+}
+
+.filter-box .accordion-item .accordion-body ul li a.filter-link {
+  padding: 3px 0;
+}
+/* ---------------------------------------------------------------------------
+   Multi-select filters
+
+   Ticking a box no longer reloads the page, so a shopper builds a selection up
+   over several taps. Three things have to say what that selection currently
+   is, at every width:
+
+     * the chip row under the toolbar   - which values are on, and a way off
+     * a badge on each accordion header - how many are on inside a panel the
+                                          shopper may have collapsed
+     * a dimmed grid while a fetch is out
+
+   The chip row used to live in the <= 991.98px block in xd-responsive.css,
+   because with the sidebar behind a button it was the only visible state.
+   It earns its place on desktop too now that the sidebar is not the whole
+   story between one tick and the next.
+--------------------------------------------------------------------------- */
+.xd-active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--xd-sp-1, 8px);
+  margin-bottom: var(--xd-sp-4, 24px);
+}
+
+/* Empty is the common case; leaving the margin behind would push the grid
+   down by 24px for no reason. */
+.xd-active-filters.is-empty {
+  display: none;
+}
+
+.xd-active-filters__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+  background-color: rgb(213 0 50 / 8%);
+  border: 1px solid rgb(213 0 50 / 22%);
+  border-radius: 50px;
+  font-size: var(--xd-fs-micro, 12px);
+  font-weight: 600;
+  color: #d50032;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.xd-active-filters__chip:hover {
+  background-color: rgb(213 0 50 / 14%);
+  border-color: rgb(213 0 50 / 40%);
+  color: #d50032;
+}
+
+.xd-active-filters__chip:focus-visible {
+  outline: 2px solid #d50032;
+  outline-offset: 2px;
+}
+
+.xd-active-filters__chip span {
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.xd-active-filters__clear {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 4px;
+  background: none;
+  border: 0;
+  font-size: var(--xd-fs-micro, 12px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: rgb(35 31 32 / 60%);
+  cursor: pointer;
+}
+
+/*
+  "3 of these are on" on a collapsed group.
+
+  Bootstrap's .accordion-button is a flex row whose ::after caret is pushed to
+  the end by `margin-left: auto`, so the badge only has to sit next to the
+  label - the caret stays pinned to the right edge on its own.
+*/
+.filter-box .accordion-button .xd-facet-group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background-color: #d50032;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+}
+
+/*
+  The grid while a fetch is out. `pointer-events: none` matters as much as the
+  fade: the cards under it are about to be replaced, and an add-to-cart landing
+  on one mid-swap adds a product the shopper can no longer see.
+
+  A card is ~380px tall, so a fetch that lands quickly must not make the page
+  flash - hence a fade rather than a spinner or a collapse.
+*/
+[data-xd-results] {
+  transition: opacity 0.18s ease;
+}
+
+[data-xd-results].is-loading {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-xd-results],
+  .xd-active-filters__chip {
+    transition: none;
+  }
+}
+
+/* The result count on the drawer's Apply button. */
+.xd-filter-panel__apply [data-xd-result-count] {
+  opacity: 0.75;
+  font-weight: 600;
+}
+
+/*
+  Both badges above are hidden by the `hidden` attribute when nothing is
+  selected, and both set `display` from a class. An author `display` rule beats
+  the UA stylesheet's `[hidden] { display: none }` whatever its specificity, so
+  without these the badge would sit there reading "0".
+*/
+.xd-filter-toggle__count[hidden],
+.filter-box .accordion-button .xd-facet-group-count[hidden] {
+  display: none;
+}

@@ -1,0 +1,138 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "banner": {
+      "type": "xd-inner-banner",
+      "settings": {
+        "image": "shopify://shop_images/listing-bg.jpg",
+        "heading": "FAQs",
+        "subtext": ""
+      }
+    },
+    "faq": {
+      "type": "xd-faq",
+      "blocks": {
+        "q1": {
+          "type": "faq",
+          "settings": {
+            "question": "Is this program suitable for someone with no finance background?",
+            "answer": "<p>Yes. The program is designed for beginners as well as professionals.</p>"
+          }
+        },
+        "q2": {
+          "type": "faq",
+          "settings": {
+            "question": "What is the difference between Classroom and Live Online modes?",
+            "answer": "<p>Classroom is conducted at the institute, while Live Online is delivered virtually.</p>"
+          }
+        },
+        "q3": {
+          "type": "faq",
+          "settings": {
+            "question": "Will I get placement guarantee after completing the program?",
+            "answer": "<p>Placement assistance is provided, but a job guarantee is not offered.</p>"
+          }
+        },
+        "q4": {
+          "type": "faq",
+          "settings": {
+            "question": "Can I switch from Self-Paced to Classroom/Live Online later?",
+            "answer": "<p>Yes, upgrade options are available based on availability.</p>"
+          }
+        },
+        "q5": {
+          "type": "faq",
+          "settings": {
+            "question": "How recognized is the FMVP certification?",
+            "answer": "<p>The certification is recognized by employers and industry professionals.</p>"
+          }
+        },
+        "q6": {
+          "type": "faq",
+          "settings": {
+            "question": "What if I miss a live session?",
+            "answer": "<p>Recorded sessions are available for enrolled learners.</p>"
+          }
+        },
+        "q7": {
+          "type": "faq",
+          "settings": {
+            "question": "Is EMI available? What are the payment options?",
+            "answer": "<p>Yes, EMI options and multiple payment methods are available.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "q1",
+        "q2",
+        "q3",
+        "q4",
+        "q5",
+        "q6",
+        "q7"
+      ],
+      "settings": {
+        "eyebrow": "",
+        "heading": "",
+        "open_first": false
+      }
+    },
+    "trust": {
+      "type": "xd-trust-bar",
+      "blocks": {
+        "i1": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon04.png",
+            "label": "Tournament Grade Quality",
+            "description": "Built for competitive performance and durability."
+          }
+        },
+        "i2": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon05.png",
+            "label": "Global Shipping",
+            "description": "Fast and secure worldwide product delivery."
+          }
+        },
+        "i3": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon06.png",
+            "label": "Professional Court Solutions",
+            "description": "Indoor and outdoor court systems for all facilities."
+          }
+        },
+        "i4": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon07.png",
+            "label": "Premium Player Support",
+            "description": "Expert assistance for players, clubs and institutions."
+          }
+        }
+      },
+      "block_order": [
+        "i1",
+        "i2",
+        "i3",
+        "i4"
+      ],
+      "settings": {}
+    }
+  },
+  "order": [
+    "banner",
+    "faq",
+    "trust"
+  ]
+}

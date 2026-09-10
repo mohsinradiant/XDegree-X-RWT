@@ -1,0 +1,52 @@
+{% comment %}
+  Markup copied verbatim from the supplied privacy-policy.html
+  (.privacy-policy-section). Generic long-form content card, used for the
+  policy pages and any other text page.
+
+  Body precedence: section setting -> page content -> shop policy body,
+  so it works for both custom pages and Shopify's native policy pages.
+{% endcomment %}
+{%- liquid
+  assign body = section.settings.text
+  if body == blank
+    assign body = page.content
+  endif
+  if body == blank
+    assign body = policy.body
+  endif
+
+  assign title = section.settings.heading
+  if title == blank
+    assign title = page.title
+  endif
+  if title == blank
+    assign title = policy.title
+  endif
+-%}
+<section class="privacy-policy-section my-5">
+  <div class="container custom-width">
+    <div class="section-heading text-center">
+      {%- if section.settings.eyebrow != blank -%}
+        <div class="sub-heading">{{ section.settings.eyebrow }}</div>
+      {%- endif -%}
+      <h4 class="all-heading heading-font text-primary">{{ title }}</h4>
+    </div>
+    <div class="row">
+      <div class="col-md-8 mx-auto">
+        <div class="bg-light rounded-3 px-4 py-5 text-primary xd-rte">{{ body }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Page content",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "XDegree" },
+    { "type": "text", "id": "heading", "label": "Heading", "info": "Falls back to the page or policy title" },
+    { "type": "richtext", "id": "text", "label": "Body", "info": "Falls back to the page content, then the policy body" }
+  ],
+  "presets": [{ "name": "XD Page content" }]
+}
+{% endschema %}

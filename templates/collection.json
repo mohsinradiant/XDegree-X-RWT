@@ -1,0 +1,223 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "xd-cat-tiles": {
+      "type": "xd-collection-categories",
+      "blocks": {
+        "t1": {
+          "type": "tile",
+          "settings": {
+            "image": "shopify://shop_images/pro01.png",
+            "title": "Power",
+            "link": "shopify://collections/power-paddles"
+          }
+        },
+        "t2": {
+          "type": "tile",
+          "settings": {
+            "image": "shopify://shop_images/pro02.png",
+            "title": "Control",
+            "link": "shopify://collections/control-paddles"
+          }
+        },
+        "t3": {
+          "type": "tile",
+          "settings": {
+            "image": "shopify://shop_images/pro03.png",
+            "title": "Spin",
+            "link": "shopify://collections/spin-paddles"
+          }
+        },
+        "t4": {
+          "type": "tile",
+          "settings": {
+            "image": "shopify://shop_images/pro04.png",
+            "title": "All Around",
+            "link": "shopify://collections/paddles"
+          }
+        },
+        "t5": {
+          "type": "tile",
+          "settings": {
+            "image": "shopify://shop_images/pro05.png",
+            "title": "Carbon Fiber",
+            "link": "shopify://collections/paddles"
+          }
+        }
+      },
+      "block_order": [
+        "t1",
+        "t2",
+        "t3",
+        "t4",
+        "t5"
+      ],
+      "settings": {
+        "heading": ""
+      }
+    },
+    "xd-grid": {
+      "type": "xd-collection-grid",
+      "settings": {
+        "filter_label": "FILTERS BY",
+        "show_sorting": true,
+        "sort_label": "SORT BY",
+        "products_per_page": 9,
+        "show_rating": true,
+        "link_style_filters": "Product Type, Category",
+        "swatch_style_filters": "Colors",
+        "show_counts": false,
+        "rating_suffix": "& Up",
+        "no_filters_text": "No filters available. Add them in the Search & Discovery app.",
+        "empty_text": "No products found.",
+        "buy_label": "BUY NOW",
+        "prev_label": "\u2190",
+        "next_label": "\u2192",
+        "apply_label": "Show results",
+        "clear_label": "Clear all"
+      }
+    },
+    "xd-trending": {
+      "type": "xd-product-showcase",
+      "settings": {
+        "background": "white",
+        "eyebrow": "HOT RIGHT NOW IN 2026",
+        "heading": "Trending",
+        "description": "Every element optimized dynamically for structural integrity and high-velocity gameplay.",
+        "collection": "frontpage",
+        "products_to_show": 6,
+        "view_all_label": "View all",
+        "view_all_link": "",
+        "layout": "slider",
+        "card_style": "trending",
+        "show_badges": true,
+        "badge_text": "New Arrival",
+        "buy_label": "BUY NOW"
+      }
+    },
+    "xd-categories": {
+      "type": "xd-categories-slider",
+      "blocks": {
+        "c1": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/categories01.jpg",
+            "title": "Paddles",
+            "link": "shopify://collections/paddles"
+          }
+        },
+        "c2": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/categories02.jpg",
+            "title": "Nets",
+            "link": "shopify://collections/nets"
+          }
+        },
+        "c3": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/categories03.jpg",
+            "title": "Backpacks",
+            "link": "shopify://collections/backpacks"
+          }
+        },
+        "c4": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/categories01.jpg",
+            "title": "Balls",
+            "link": "shopify://collections/balls"
+          }
+        },
+        "c5": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/categories02.jpg",
+            "title": "Courts",
+            "link": "shopify://collections/courts"
+          }
+        },
+        "c6": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/categories03.jpg",
+            "title": "Overgrips",
+            "link": "shopify://collections/overgrips"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4",
+        "c5",
+        "c6"
+      ],
+      "settings": {
+        "eyebrow": "EVERYTHING FOR THE GAME",
+        "heading": "Shop by Categories"
+      }
+    },
+    "xd-trust-bar": {
+      "type": "xd-trust-bar",
+      "blocks": {
+        "i1": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon04.png",
+            "label": "Tournament Grade Quality",
+            "description": "Built for competitive performance and durability."
+          }
+        },
+        "i2": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon05.png",
+            "label": "Global Shipping",
+            "description": "Fast and secure worldwide product delivery."
+          }
+        },
+        "i3": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon06.png",
+            "label": "Professional Court Solutions",
+            "description": "Indoor and outdoor court systems for all facilities."
+          }
+        },
+        "i4": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon07.png",
+            "label": "Premium Player Support",
+            "description": "Expert assistance for players, clubs and institutions."
+          }
+        }
+      },
+      "block_order": [
+        "i1",
+        "i2",
+        "i3",
+        "i4"
+      ],
+      "settings": {}
+    }
+  },
+  "order": [
+    "xd-cat-tiles",
+    "xd-grid",
+    "xd-trending",
+    "xd-categories",
+    "xd-trust-bar"
+  ]
+}

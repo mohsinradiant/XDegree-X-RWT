@@ -1,0 +1,96 @@
+{% comment %}
+  Markup copied verbatim from the supplied blog.html (.blog-listing).
+  Driven by the native blog's articles, with Shopify pagination.
+{% endcomment %}
+{%- paginate blog.articles by section.settings.per_page -%}
+  <section class="blog-listing section-tb-padding96">
+    <div class="container custom-width">
+      <div class="row g-4">
+        {%- for article in blog.articles -%}
+          <div class="col-lg-4 col-md-6">
+            <div class="blog-card">
+              <div class="blog-card--image">
+                {%- if article.image -%}
+                  <a href="{{ article.url }}">
+                    <img src="{{ article.image | image_url: width: 800 }}" class="img-fluid" alt="{{ article.image.alt | escape }}">
+                  </a>
+                {%- endif -%}
+              </div>
+              <div class="blog-card--content">
+                <h4 class="blog-card-title heading-font">
+                  <a href="{{ article.url }}" class="text-primary">{{ article.title }}</a>
+                </h4>
+                <p>{{ article.excerpt_or_content | strip_html | truncate: 90 }}</p>
+                <a href="{{ article.url }}">{{ section.settings.read_label }}</a>
+              </div>
+            </div>
+          </div>
+        {%- else -%}
+          <div class="col-12"><p class="text-primary">{{ section.settings.empty_text }}</p></div>
+        {%- endfor -%}
+      </div>
+
+      {%- if paginate.pages > 1 -%}
+        <nav class="xd-pager d-flex justify-content-center gap-2 mt-5">
+          {%- if paginate.previous -%}<a class="xd-pager__link" href="{{ paginate.previous.url }}" aria-label="{{ section.settings.prev_label | escape }}">{{ section.settings.prev_label }}</a>{%- endif -%}
+          {%- for part in paginate.parts -%}
+            {%- if part.is_link -%}
+              <a class="xd-pager__link" href="{{ part.url }}">{{ part.title }}</a>
+            {%- elsif part.title == paginate.current_page -%}
+              <span class="xd-pager__link is-active" aria-current="page">{{ part.title }}</span>
+            {%- else -%}
+              <span class="xd-pager__link">{{ part.title }}</span>
+            {%- endif -%}
+          {%- endfor -%}
+          {%- if paginate.next -%}<a class="xd-pager__link" href="{{ paginate.next.url }}" aria-label="{{ section.settings.next_label | escape }}">{{ section.settings.next_label }}</a>{%- endif -%}
+        </nav>
+      {%- endif -%}
+    </div>
+  </section>
+{%- endpaginate -%}
+
+{% schema %}
+{
+  "name": "XD Blog listing",
+  "settings": [
+    {
+      "type": "range",
+      "id": "per_page",
+      "label": "Articles per page",
+      "min": 3,
+      "max": 24,
+      "step": 3,
+      "default": 12
+    },
+    {
+      "type": "text",
+      "id": "read_label",
+      "label": "Read link label",
+      "default": "Read Article"
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "Empty state",
+      "default": "No articles yet."
+    },
+    {
+      "type": "text",
+      "id": "prev_label",
+      "label": "Pagination previous",
+      "default": "\u2190"
+    },
+    {
+      "type": "text",
+      "id": "next_label",
+      "label": "Pagination next",
+      "default": "\u2192"
+    }
+  ],
+  "presets": [
+    {
+      "name": "XD Blog listing"
+    }
+  ]
+}
+{% endschema %}

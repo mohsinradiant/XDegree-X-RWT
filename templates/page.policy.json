@@ -1,0 +1,60 @@
+{
+  "sections": {
+    "content": {
+      "type": "xd-page-content",
+      "settings": {
+        "eyebrow": "XDegree",
+        "heading": "",
+        "text": ""
+      }
+    },
+    "trust": {
+      "type": "xd-trust-bar",
+      "blocks": {
+        "i1": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon04.png",
+            "label": "Tournament Grade Quality",
+            "description": "Built for competitive performance and durability."
+          }
+        },
+        "i2": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon05.png",
+            "label": "Global Shipping",
+            "description": "Fast and secure worldwide product delivery."
+          }
+        },
+        "i3": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon06.png",
+            "label": "Professional Court Solutions",
+            "description": "Indoor and outdoor court systems for all facilities."
+          }
+        },
+        "i4": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon07.png",
+            "label": "Premium Player Support",
+            "description": "Expert assistance for players, clubs and institutions."
+          }
+        }
+      },
+      "block_order": [
+        "i1",
+        "i2",
+        "i3",
+        "i4"
+      ],
+      "settings": {}
+    }
+  },
+  "order": [
+    "content",
+    "trust"
+  ]
+}

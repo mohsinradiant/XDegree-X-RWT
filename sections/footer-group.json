@@ -1,0 +1,23 @@
+{
+  "name": "t:sections.footer.name",
+  "type": "footer",
+  "sections": {
+    "xd-footer": {
+      "type": "xd-footer",
+      "blocks": {
+        "col1": { "type": "menu", "settings": { "heading": "Company", "menu": "company" } },
+        "col2": { "type": "menu", "settings": { "heading": "Categories", "menu": "categories" } },
+        "col3": { "type": "menu", "settings": { "heading": "Community", "menu": "community" } },
+        "col4": { "type": "menu", "settings": { "heading": "Customer Support", "menu": "customer-support" } }
+      },
+      "block_order": ["col1", "col2", "col3", "col4"],
+      "settings": {
+        "logo": "shopify://shop_images/white-logo.png",
+        "newsletter_heading": "Stay Inspired",
+        "newsletter_placeholder": "Enter Your Email Address",
+        "newsletter_button": "Subscribe"
+      }
+    }
+  },
+  "order": ["xd-footer"]
+}

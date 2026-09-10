@@ -1,0 +1,100 @@
+{% comment %}
+  Markup copied verbatim from the supplied index.html (categories-section).
+  Slider classes must stay as-is: js/custom.js boots ".categories-slider"
+  with pagination ".destinationPagination".
+{% endcomment %}
+
+<section class="categories-section section-tb-padding96">
+  <div class="container custom-width">
+    <div class="section-heading mb-5 text-center">
+      <div class="sub-heading">{{ section.settings.eyebrow }}</div>
+      <h3 class="all-heading heading-font text-primary">{{ section.settings.heading }}</h3>
+    </div>
+  </div>
+  <div class="container-fluid"></div>
+  {%- comment -%}
+    Swiper's loop mode rearranges slides, so it needs at least
+    slidesPerView * 2 slides to fill the track (4.5 * 2 = 9 here). With fewer
+    real categories than that it runs out and leaves blank gaps. Repeat the
+    set until we clear that threshold; xd-custom.js keeps the pagination
+    bullet count at the number of real categories via data-xd-unique.
+  {%- endcomment -%}
+  {%- liquid
+    assign unique_count = section.blocks.size
+    assign min_slides = 18
+    assign passes = 1
+    if unique_count > 0 and unique_count < min_slides
+      assign passes = min_slides | divided_by: unique_count
+      assign leftover = min_slides | modulo: unique_count
+      if leftover > 0
+        assign passes = passes | plus: 1
+      endif
+    endif
+  -%}
+  <div class="swiper categories-slider" data-xd-unique="{{ unique_count }}">
+    <div class="swiper-wrapper">
+      {%- for pass in (1..passes) -%}
+        {%- for block in section.blocks -%}
+          <div
+            class="swiper-slide"
+            {% if forloop.parentloop.first %}
+              {{ block.shopify_attributes }}
+            {% else %}
+              aria-hidden="true"
+            {% endif %}
+          >
+            <div class="categories-card position-relative">
+              <div class="categories-card-image">
+                {%- if block.settings.image != blank -%}
+                  <img src="{{ block.settings.image | image_url: width: 824 }}" class="img-fluid" alt="{{ block.settings.image.alt | escape }}">
+                {%- endif -%}
+              </div>
+              <div class="categories-card-content d-flex align-items-center w-100 bottom-0 p-3 justify-content-between position-absolute">
+                <div class="categories-card-title">{{ block.settings.title }}</div>
+                <a href="{{ block.settings.link | default: '#' }}" class="categories-card-btn">
+                  <img src="{{ 'rt-icon.svg' | asset_url }}" alt="">
+                </a>
+              </div>
+            </div>
+          </div>
+        {%- endfor -%}
+      {%- endfor -%}
+    </div>
+    <div class="pagination position-relative swiper-pagination destinationPagination top-1 mt-5"></div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Categories slider",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow text", "default": "EVERYTHING FOR THE GAME" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Shop by Categories" }
+  ],
+  "blocks": [
+    {
+      "type": "category",
+      "name": "Category",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Image", "info": "Recommended 824 x 1132px" },
+        { "type": "text", "id": "title", "label": "Title", "default": "Paddles" },
+        { "type": "url", "id": "link", "label": "Link" }
+      ]
+    }
+  ],
+  "max_blocks": 12,
+  "presets": [
+    {
+      "name": "XD Categories slider",
+      "blocks": [
+        { "type": "category" },
+        { "type": "category" },
+        { "type": "category" },
+        { "type": "category" },
+        { "type": "category" },
+        { "type": "category" }
+      ]
+    }
+  ]
+}
+{% endschema %}

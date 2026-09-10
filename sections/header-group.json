@@ -1,0 +1,16 @@
+{
+  "name": "t:sections.header.name",
+  "type": "header",
+  "sections": {
+    "xd-header": {
+      "type": "xd-header",
+      "settings": {
+        "menu": "main-menu",
+        "support_text": "Customer Support",
+        "support_link": "",
+        "message": "FREE SHIPPING | LIMITED LIFETIME WARRANTY"
+      }
+    }
+  },
+  "order": ["xd-header"]
+}

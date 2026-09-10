@@ -1,0 +1,131 @@
+{% comment %}
+  Markup copied verbatim from the supplied index.html (why-shop-section).
+  The counters are animated by js/custom.js via jQuery counterUp.
+{% endcomment %}
+{%- liquid
+  assign bg = section.settings.background_image | image_url: width: 1920
+  assign bg_mobile_image = section.settings.background_image_mobile | default: section.settings.background_image
+  assign bg_mobile = bg_mobile_image | image_url: width: 1200
+  assign features = section.blocks | where: 'type', 'feature'
+  assign stats = section.blocks | where: 'type', 'stat'
+-%}
+
+{%- comment -%}
+  The backdrop is passed as CSS custom properties rather than a hard-coded
+  inline background-image so xd-responsive.css can swap the mobile crop in at
+  the breakpoint - an inline style would always outrank the stylesheet.
+{%- endcomment -%}
+<section
+  class="why-shop-section section-t-padding96"
+  style="--xd-bg: url({{ bg }}); --xd-bg-mobile: url({{ bg_mobile }}); background-size: cover;"
+>
+  <div class="container custom-width">
+    <div class="section-heading mb-5 pb-5 text-center">
+      <div class="sub-heading">{{ section.settings.eyebrow }}</div>
+      <h3 class="all-heading heading-font text-white">{{ section.settings.heading }}</h3>
+    </div>
+    <div class="why-shop-widget-wrap">
+      <div class="row g-0 why-shop-widget ">
+        <div class="col-lg-4 why-shop-col why-shop-col--features">
+          <div class="why-shop-left">
+            {%- for block in features -%}
+              <div class="why-shop-left-item py-4 d-flex gap-4" {{ block.shopify_attributes }}>
+                <div class="icon">
+                  {%- if block.settings.icon != blank -%}
+                    <img src="{{ block.settings.icon | image_url: width: 96 }}" class="img-fluid" alt="">
+                  {%- endif -%}
+                </div>
+                <div class="content">
+                  <h5 class="why-shop-left-item-title heading-font">{{ block.settings.title }}</h5>
+                  <p class="why-shop-left-item--disc">{{ block.settings.description }}</p>
+                </div>
+              </div>
+            {%- endfor -%}
+          </div>
+        </div>
+        <div class="col-lg-4 why-shop-col why-shop-col--media">
+          <div class="why-shop-image">
+            {%- if section.settings.center_image != blank -%}
+              <img src="{{ section.settings.center_image | image_url: width: 936 }}" class="img-fluid" alt="">
+            {%- endif -%}
+          </div>
+        </div>
+        <div class="col-lg-4 why-shop-col why-shop-col--stats">
+          <div class="why-shop-right-counter pe-5 pt-5">
+            {%- for block in stats -%}
+              <div class="why-shop-left-item  d-flex justify-content-between align-items-center" {{ block.shopify_attributes }}>
+                <div class="why-shop-right-number heading-font">
+                  {{ block.settings.number }}
+                </div>
+                <div class="why-shop-right-disc text-end">
+                  {{ block.settings.description }}
+                </div>
+              </div>
+            {%- endfor -%}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Why shop with",
+  "settings": [
+    { "type": "image_picker", "id": "background_image", "label": "Section background image (desktop)" },
+    {
+      "type": "image_picker",
+      "id": "background_image_mobile",
+      "label": "Section background image (mobile)",
+      "info": "Recommended 900 x 1400px (portrait). Used below 768px. Falls back to the desktop image if left empty."
+    },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow text", "default": "Why Shop with" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "X-Degree" },
+    { "type": "image_picker", "id": "center_image", "label": "Center image" }
+  ],
+  "blocks": [
+    {
+      "type": "feature",
+      "name": "Feature (left column)",
+      "settings": [
+        { "type": "image_picker", "id": "icon", "label": "Icon", "info": "Recommended 96 x 96px" },
+        { "type": "text", "id": "title", "label": "Title", "default": "Performance" },
+        {
+          "type": "textarea",
+          "id": "description",
+          "label": "Description",
+          "default": "Pro-grade gear built for precision, durability and competitive play."
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "name": "Stat (right column)",
+      "settings": [
+        { "type": "text", "id": "number", "label": "Number", "default": "25k+" },
+        {
+          "type": "textarea",
+          "id": "description",
+          "label": "Description",
+          "default": "Active Players Using X-Degree Gear Worldwide"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 8,
+  "presets": [
+    {
+      "name": "XD Why shop with",
+      "blocks": [
+        { "type": "feature" },
+        { "type": "feature" },
+        { "type": "feature" },
+        { "type": "stat" },
+        { "type": "stat" },
+        { "type": "stat" }
+      ]
+    }
+  ]
+}
+{% endschema %}

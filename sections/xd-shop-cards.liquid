@@ -1,0 +1,120 @@
+{% comment %}
+  Markup copied verbatim from the supplied about.html (.shop-card grids).
+  Two variants: the dark "Find Your Advantage" row and the light
+  "Support, Rewards & Community" row with a CTA button per card.
+{% endcomment %}
+{%- liquid
+  assign dark = false
+  if section.settings.background == 'black'
+    assign dark = true
+  endif
+-%}
+{%- comment -%}
+  `xd-shop-cards` carries no desktop styling - it exists so the mobile layer in
+  xd-responsive.css has a hook for this section. Without it the only selector
+  available is `.section-tb-padding96`, which every section on the site shares.
+{%- endcomment -%}
+<section class="xd-shop-cards section-tb-padding96{% if dark %} bg-black{% endif %}">
+  <div class="container custom-width">
+    <div class="row mb-5">
+      <div class="{% if section.settings.description != blank %}col-md-8{% else %}col-md-12{% endif %}">
+        <div class="">
+          {%- if section.settings.eyebrow != blank -%}
+            <div class="sub-heading">{{ section.settings.eyebrow }}</div>
+          {%- endif -%}
+          <h3 class="all-heading heading-font {% if dark %}text-white{% else %}text-primary{% endif %}">
+            {{- section.settings.heading -}}
+          </h3>
+        </div>
+      </div>
+      {%- if section.settings.description != blank -%}
+        <div class="col-md-4 d-flex align-items-center">
+          <div class="d-flex gap-3 align-items-center">
+            <p class="mb-0 text-end fs12 {% if dark %}text-white-70{% else %}text-primary{% endif %}">
+              {{ section.settings.description }}
+            </p>
+            {%- if section.settings.view_all_link != blank -%}
+              <a href="{{ section.settings.view_all_link }}" class="heading-font btn btn-primary sm-btn">
+                {{ section.settings.view_all_label }}
+                <span class="btn-icon"><img src="{{ 'rt-icon.svg' | asset_url }}" alt=""></span>
+              </a>
+            {%- endif -%}
+          </div>
+        </div>
+      {%- endif -%}
+    </div>
+    <div class="row">
+      {%- for block in section.blocks -%}
+        <div class="col-md-4" {{ block.shopify_attributes }}>
+          {%- comment -%}
+            Two card shapes share this markup: a plain title + text link, and a
+            taller one with a button. They need different image crops on a
+            phone (the button variant's overlay is about twice as tall), so the
+            variant is named in a class rather than inferred in CSS.
+          {%- endcomment -%}
+          <div class="shop-card position-relative{% if block.settings.button_label != blank %} shop-card--cta{% endif %}">
+            <div class="shop-card-image position-relative">
+              {%- if block.settings.image != blank -%}
+                <img src="{{ block.settings.image | image_url: width: 800 }}" class="img-fluid w-100" alt="{{ block.settings.image.alt | escape }}">
+              {%- endif -%}
+              {%- if block.settings.tag != blank -%}
+                <span class="img-tag">{{ block.settings.tag }}</span>
+              {%- endif -%}
+            </div>
+            <div class="shop-card-content{% if block.settings.button_label != blank %} w-75 mw-100{% endif %}">
+              {%- if block.settings.button_label != blank -%}
+                <div class="mb-5 pb-4">
+                  <h4 class="shop-card-title my-1 fs16 fw600 text-white text-capitalize w-75 pe-lg-4">{{ block.settings.title }}</h4>
+                  {%- if block.settings.text != blank -%}
+                    <p class="text-white-70 fs13 mb-0">{{ block.settings.text }}</p>
+                  {%- endif -%}
+                </div>
+                <a class="btn sm-btn product-card-btn btn-primary" href="{{ block.settings.link | default: '#' }}">
+                  {{ block.settings.button_label }}
+                  <span class="btn-icon"><img src="{{ 'rt-icon.svg' | asset_url }}" alt=""></span>
+                </a>
+              {%- else -%}
+                <h4 class="shop-card-title my-1 fs16 fw600 text-white">{{ block.settings.title }}</h4>
+                <a href="{{ block.settings.link | default: '#' }}">{{ block.settings.link_label }}</a>
+              {%- endif -%}
+            </div>
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Shop cards",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Shop by paddle type" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Find Your Advantage." },
+    { "type": "textarea", "id": "description", "label": "Description (right side)" },
+    { "type": "text", "id": "view_all_label", "label": "View all label", "default": "View all" },
+    { "type": "url", "id": "view_all_link", "label": "View all link" },
+    {
+      "type": "select", "id": "background", "label": "Background",
+      "options": [{ "value": "black", "label": "Black" }, { "value": "white", "label": "White" }],
+      "default": "black"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "card", "name": "Card",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Image" },
+        { "type": "text", "id": "tag", "label": "Tag", "default": "Control" },
+        { "type": "text", "id": "title", "label": "Title", "default": "Shop Control Paddles" },
+        { "type": "textarea", "id": "text", "label": "Text" },
+        { "type": "text", "id": "link_label", "label": "Link label", "default": "explore now" },
+        { "type": "text", "id": "button_label", "label": "Button label", "info": "Leave blank for the simple link style" },
+        { "type": "url", "id": "link", "label": "Link" }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [{ "name": "XD Shop cards", "blocks": [{ "type": "card" }, { "type": "card" }, { "type": "card" }] }]
+}
+{% endschema %}

@@ -1,0 +1,84 @@
+{
+  "sections": {
+    "register": {
+      "type": "xd-register",
+      "blocks": {
+        "s1": {
+          "type": "select",
+          "settings": {
+            "label": "Country",
+            "options": "India, United States, United Kingdom, Australia"
+          }
+        },
+        "s2": {
+          "type": "select",
+          "settings": {
+            "label": "City",
+            "options": "Lucknow, Delhi, Mumbai, Bengaluru"
+          }
+        }
+      },
+      "block_order": [
+        "s1",
+        "s2"
+      ],
+      "settings": {
+        "image": "shopify://shop_images/register-img.jpg",
+        "heading": "Fill out the information below to register your paddle",
+        "name_label": "Name",
+        "email_label": "Email",
+        "phone_label": "Phone No.",
+        "button_label": "submit",
+        "success_text": "Thanks - your paddle registration has been received."
+      }
+    },
+    "trust": {
+      "type": "xd-trust-bar",
+      "blocks": {
+        "i1": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon04.png",
+            "label": "Tournament Grade Quality",
+            "description": "Built for competitive performance and durability."
+          }
+        },
+        "i2": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon05.png",
+            "label": "Global Shipping",
+            "description": "Fast and secure worldwide product delivery."
+          }
+        },
+        "i3": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon06.png",
+            "label": "Professional Court Solutions",
+            "description": "Indoor and outdoor court systems for all facilities."
+          }
+        },
+        "i4": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon07.png",
+            "label": "Premium Player Support",
+            "description": "Expert assistance for players, clubs and institutions."
+          }
+        }
+      },
+      "block_order": [
+        "i1",
+        "i2",
+        "i3",
+        "i4"
+      ],
+      "settings": {}
+    }
+  },
+  "order": [
+    "register",
+    "trust"
+  ]
+}

@@ -1,0 +1,255 @@
+{% comment %}
+  Markup copied verbatim from the supplied index.html.
+  Supports the three card treatments used in the design:
+    default   -> "New Arrivals" (static bootstrap grid, dark)
+    trending  -> "Trending" (swiper, full-bleed image + New Arrival badge)
+    bestsellers -> "Bestsellers" (swiper, bordered card, light)
+  Slider classes must stay as-is: js/custom.js boots ".trending-slider".
+{% endcomment %}
+{%- liquid
+  assign style = section.settings.card_style
+  assign products = section.settings.collection.products
+
+  assign bg = section.settings.background
+  assign on_dark = false
+  if bg == 'black'
+    assign on_dark = true
+  endif
+  assign bg_class = ''
+  if bg == 'black'
+    assign bg_class = ' bg-black'
+  elsif bg == 'light'
+    assign bg_class = ' bg-light'
+  endif
+  if on_dark
+    assign head_class = 'text-white'
+    assign note_class = 'text-white-70'
+    assign eyebrow_class = 'sub-heading'
+  else
+    assign head_class = 'text-primary'
+    assign note_class = 'text-primary'
+    assign eyebrow_class = 'sub-heading'
+  endif
+
+  if section.settings.view_all_link != blank
+    assign view_all_url = section.settings.view_all_link
+  elsif section.settings.collection != blank
+    assign view_all_url = section.settings.collection.url
+  else
+    assign view_all_url = '#'
+  endif
+-%}
+
+<section class="section-tb-padding96{{ bg_class }} home-new-arrivals-section">
+  <div class="container custom-width">
+    {%- comment -%}
+      The xd-section-head__* hooks let the mobile stylesheet re-flow this
+      two-column row into eyebrow / heading + "View all" / description without
+      duplicating the CTA in the DOM. Desktop keeps the original grid.
+    {%- endcomment -%}
+    <div class="row mb-5 xd-section-head">
+      <div class="col-md-8">
+        <div class="xd-section-head__titles">
+          <div class="{{ eyebrow_class }}">{{ section.settings.eyebrow }}</div>
+          <h3 class="all-heading heading-font {{ head_class }}">
+            {{- section.settings.heading -}}
+          </h3>
+        </div>
+      </div>
+      <div class="col-md-4 d-flex align-items-center xd-section-head__aside">
+        <div class="d-flex gap-3 align-items-center xd-section-head__aside-inner">
+          <p class="mb-0 text-end fs12 xd-section-head__note {{ note_class }}">
+            {{ section.settings.description }}
+          </p>
+          <a href="{{ view_all_url }}" class="heading-font btn btn-primary sm-btn xd-section-head__cta">
+            {{ section.settings.view_all_label }}
+            <span class="btn-icon"><img src="{{ 'rt-icon.svg' | asset_url }}" alt=""></span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {%- if section.settings.layout == 'slider' -%}
+      <div class="trending-slider{% if style == 'bestsellers' %} bestsellers-slider{% endif %} swiper">
+        <div class="swiper-wrapper">
+          {%- for product in products limit: section.settings.products_to_show -%}
+            <div class="swiper-slide">
+              {%- render 'xd-product-card',
+                card_uid: forloop.index,
+                product: product,
+                style: style,
+                buy_label: section.settings.buy_label,
+                on_dark: on_dark,
+                show_badge: section.settings.show_badges,
+                badge_text: section.settings.badge_text
+              -%}
+            </div>
+          {%- endfor -%}
+        </div>
+        <div class="pagination position-relative swiper-pagination TrendingPagination top-1 mt-5"></div>
+      </div>
+    {%- else -%}
+      {%- comment -%}
+        col-6 gives a 2-up grid below 768px. One card per row is the Bootstrap
+        default here and it buries the section: four cards become four
+        screenfuls. 2-up is the standard phone product grid and lets shoppers
+        compare without scrolling.
+      {%- endcomment -%}
+      <div class="row xd-product-grid">
+        {%- for product in products limit: section.settings.products_to_show -%}
+          <div class="col-6 col-md-3">
+            {%- render 'xd-product-card',
+              card_uid: forloop.index,
+              product: product,
+              style: style,
+              buy_label: section.settings.buy_label,
+              on_dark: on_dark,
+              show_badge: section.settings.show_badges,
+              badge_text: section.settings.badge_text
+            -%}
+          </div>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Product showcase",
+  "settings": [
+    {
+      "type": "select",
+      "id": "background",
+      "label": "Background",
+      "default": "black",
+      "options": [
+        {
+          "value": "black",
+          "label": "Black"
+        },
+        {
+          "value": "light",
+          "label": "Light"
+        },
+        {
+          "value": "white",
+          "label": "White"
+        }
+      ]
+    },
+
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow text",
+      "default": "JUST DROPPED"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "New Arrivals"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Description",
+      "default": "Every element optimized dynamically for structural integrity and high-velocity gameplay."
+    },
+    {
+      "type": "header",
+      "content": "Products"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "Products to show",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "text",
+      "id": "view_all_label",
+      "label": "View all label",
+      "default": "View all"
+    },
+    {
+      "type": "url",
+      "id": "view_all_link",
+      "label": "View all link",
+      "info": "Leave blank to link to the collection above"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        {
+          "value": "grid",
+          "label": "Static grid"
+        },
+        {
+          "value": "slider",
+          "label": "Slider"
+        }
+      ],
+      "default": "grid"
+    },
+    {
+      "type": "select",
+      "id": "card_style",
+      "label": "Card style",
+      "options": [
+        {
+          "value": "default",
+          "label": "New Arrivals (dark, white image tile)"
+        },
+        {
+          "value": "trending",
+          "label": "Trending (dark, full-bleed image)"
+        },
+        {
+          "value": "bestsellers",
+          "label": "Bestsellers (light, bordered)"
+        }
+      ],
+      "default": "default"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_badges",
+      "label": "Show badge on cards",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "badge_text",
+      "label": "Badge text",
+      "default": "New Arrival"
+    },
+    {
+      "type": "text",
+      "id": "buy_label",
+      "label": "Card button label",
+      "default": "BUY NOW"
+    }
+  ],
+  "presets": [
+    {
+      "name": "XD Product showcase"
+    }
+  ]
+}
+{% endschema %}

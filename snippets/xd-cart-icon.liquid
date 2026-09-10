@@ -1,0 +1,10 @@
+{% comment %}
+  Kept identical to sections/cart-icon-bubble.liquid so the header markup and
+  Dawn's post-update re-render produce the same result.
+{% endcomment %}
+<i class="fa-regular fa-cart-shopping-fast"></i>
+<span class="visually-hidden">{{ 'templates.cart.cart' | t }}</span>
+{%- if cart != empty -%}
+  <span class="xd-cart-bubble" aria-hidden="true">{{ cart.item_count }}</span>
+  <span class="visually-hidden">{{ 'sections.header.cart_count' | t: count: cart.item_count }}</span>
+{%- endif -%}

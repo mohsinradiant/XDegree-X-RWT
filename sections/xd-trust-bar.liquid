@@ -1,0 +1,52 @@
+{% comment %}
+  Markup copied verbatim from the supplied index.html (trust-bar section).
+  Note: only the first item carries "heading-font" in the source design.
+{% endcomment %}
+
+<section class="trust-bar">
+  <div class="container">
+    <div class="row g-3 text-center text-md-start">
+      {%- for block in section.blocks -%}
+        <div class="col-6 col-md-3 d-flex align-items-center gap-3" {{ block.shopify_attributes }}>
+          {%- if block.settings.icon != blank -%}
+            <img src="{{ block.settings.icon | image_url: width: 140 }}" alt="">
+          {%- endif -%}
+          <div>
+            <p class="trust-bar__label{% if forloop.first %} heading-font{% endif %} mb-0">{{ block.settings.label }}</p>
+            <p class="trust-bar__desc">{{ block.settings.description }}</p>
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Trust bar",
+  "settings": [],
+  "blocks": [
+    {
+      "type": "item",
+      "name": "Item",
+      "settings": [
+        { "type": "image_picker", "id": "icon", "label": "Icon", "info": "Recommended 140 x 140px" },
+        { "type": "text", "id": "label", "label": "Label", "default": "Tournament Grade Quality" },
+        {
+          "type": "textarea",
+          "id": "description",
+          "label": "Description",
+          "default": "Built for competitive performance and durability."
+        }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "XD Trust bar",
+      "blocks": [{ "type": "item" }, { "type": "item" }, { "type": "item" }, { "type": "item" }]
+    }
+  ]
+}
+{% endschema %}

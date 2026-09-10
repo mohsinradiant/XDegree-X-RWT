@@ -1,0 +1,1047 @@
+{% comment %}
+  Markup copied verbatim from the supplied "collection page.html" (filter bar,
+  .filter-box sidebar accordion and the product grid).
+
+  Wired to Shopify natively:
+    - sort dropdown  -> collection.sort_options
+    - sidebar        -> collection.filters (Search & Discovery app)
+    - price slider   -> the price_range filter's min/max params
+    - grid           -> paginated collection.products
+
+  Every filter group in the design is rendered from whatever Search & Discovery
+  returns - nothing is hard-coded - so adding or reordering a filter in the app
+  changes the sidebar with no theme edit. Each group is drawn in one of four
+  styles, picked per group (see xd-facet-group):
+
+    price   -> filter.type == 'price_range'            (dual range slider)
+    swatch  -> presentation swatch/image, or named in
+               "Swatch-style filter groups"            (Colors)
+    rating  -> the group named in "Rating tag prefix"   (star rows)
+    else    -> checkbox list                           (Material, Level,
+                                                        Style, Weight)
+
+  ---------------------------------------------------------------------------
+  MULTI-SELECT, AND WHY THE GROUPS COME FROM TAGS
+
+  Every group is multi-select, in the sense that ticking several values in one
+  group returns the union of them. That is not free, and it is the reason the
+  sidebar reads tags rather than the metafields this store also has:
+
+    Shopify ORs multiple values of a tag or product-type filter, but
+    INTERSECTS multiple values of a list-metafield filter.
+
+  Measured on this store: material Graphite matched 3 products, Carbon Fiber
+  matched 2, and both together matched 0 - no paddle is made of both. Ticking a
+  second material emptied the grid. Product type behaved the other way round:
+  Paddles 2 + Nets 3 = 5. (Repeating a single value returns the same count as
+  passing it once, so this is real intersection, not a parsing artefact.)
+
+  So Material, Player Level, Playing Style, Weight and Rating are carried as
+  PREFIXED TAGS - "Material: Carbon Fiber", "Level: Advanced" - which arrive as
+  a single "Product tags" filter that the loop below slices by prefix into one
+  accordion group each. The metafields of the same name are left alone and are
+  still correct; the sidebar just does not read them.
+
+  Every value is a checkbox bound to #XdFacetForm, so the form is the one
+  source of truth for what is selected: the query string is always
+  `new URLSearchParams(new FormData(form))`, never a URL scraped out of the
+  markup. Changes are debounced and applied over fetch(), so a shopper can tick
+  four materials and two player levels as fast as they can move and the grid is
+  fetched once, at the end. The sidebar is never re-rendered mid-session - its
+  counts and exhausted states are synced in place from the response - so the
+  accordion keeps its scroll position, its open panels, and the drawer stays
+  open on a phone.
+
+  The grid keeps the .bestsellers-slider class because main.css hangs the
+  bordered card treatment off it (.bestsellers-slider .product-card-image).
+{% endcomment %}
+{%- liquid
+  # Labels typed in the theme editor, normalised for comparison against
+  # filter.label. Liquid cannot strip each item of a split, so the separators
+  # are normalised before splitting.
+  assign link_labels = section.settings.link_style_filters | downcase | replace: ', ', ',' | replace: ' ,', ',' | split: ','
+  assign swatch_labels = section.settings.swatch_style_filters | downcase | replace: ', ', ',' | replace: ' ,', ',' | split: ','
+
+  # Colours the design already paints by class in main.css (.color-charcoal
+  # etc). Kept as a string because xd-facet-group takes it as one; keep in step
+  # with that file if a colour is added there.
+  assign design_colours = 'charcoal,navy,crimson,ivory'
+
+  # Active filters.
+  #
+  # The chip row under the toolbar is shown at every width now that ticking a
+  # box no longer reloads the page: on desktop it is the running total of a
+  # selection the shopper is still building, and it is the only place a filter
+  # from a collapsed accordion panel is visible.
+  assign active_count = 0
+  for filter in collection.filters
+    if filter.type == 'price_range'
+      if filter.min_value.value != blank or filter.max_value.value != blank
+        assign active_count = active_count | plus: 1
+      endif
+    else
+      assign active_count = active_count | plus: filter.active_values.size
+    endif
+  endfor
+
+  # "Clear all" drops every filter but must keep the sort order - losing it
+  # would silently re-order the grid under the reader.
+  assign sort_by = collection.sort_by | default: collection.default_sort_by
+  assign clear_url = collection.url
+  if sort_by != blank
+    assign clear_url = collection.url | append: '?sort_by=' | append: sort_by
+  endif
+-%}
+{%- paginate collection.products by section.settings.products_per_page -%}
+  <section class="section-tb-padding96 pt-0">
+    <div class="container custom-width">
+      {%- comment -%}
+        THE FACET FORM IS EMPTY ON PURPOSE.
+
+        It used to wrap the whole section, which put the product grid - and so
+        every product card's own add-to-cart <form> - inside it. HTML has no
+        nested forms: the parser drops the first inner <form> start tag and
+        re-parents its inputs to this one, and the inner `</form>` then closes
+        THIS form early. Two things followed, both live before this section was
+        touched for mobile:
+
+          * the first card on every page had no <form>, so product-form.js
+            threw on it and its BUY NOW did nothing;
+          * that card's hidden fields (form_type, product-id, section-id...)
+            were serialised into every filter and sort URL.
+
+        So the form is a standalone element and its controls are associated by
+        `form="XdFacetForm"` instead - the grid is no longer inside it. Any
+        control added to the sidebar needs that attribute or it will not be
+        submitted.
+
+        Events do not follow form ownership, only the DOM, so the script at the
+        bottom listens on #XdFacets rather than on the form.
+
+        The form still works with JavaScript off: it is a GET form pointed at
+        the collection, so the drawer's Apply button (a real submit button)
+        navigates to the filtered URL the long way round.
+      {%- endcomment -%}
+      <form id="XdFacetForm" method="get" action="{{ collection.url }}"></form>
+      <div
+        id="XdFacets"
+        data-xd-facets
+        data-section-id="{{ section.id }}"
+        data-collection-url="{{ collection.url }}"
+      >
+        <div class="row border-bottom g-0 mb-4 xd-facet-bar">
+          <div class="col-md-6 d-flex align-items-center gap-4">
+            {%- comment -%}
+              The mobile control. `.filter-title` beside it is the desktop
+              label - a plain caption, not something you can press - so the two
+              swap at the drawer's breakpoint rather than one trying to be
+              both. `d-lg-none` matters: above 992px the panel is static markup
+              and a toggle would still throw Bootstrap's backdrop over it.
+            {%- endcomment -%}
+            <button
+              type="button"
+              class="xd-filter-toggle d-lg-none heading-font"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#XdFilterPanel"
+              aria-controls="XdFilterPanel"
+            >
+              <img src="{{ 'filter.svg' | asset_url }}" width="24" height="24" alt="" aria-hidden="true">
+              <span>{{ section.settings.filter_label }}</span>
+              <span class="xd-filter-toggle__count" data-xd-total-count {% if active_count == 0 %}hidden{% endif %}>
+                {{- active_count -}}
+              </span>
+            </button>
+            <div class="filter-title d-none d-lg-flex align-items-center gap-3 heading-font">
+              {{ section.settings.filter_label }} <img src="{{ 'filter.svg' | asset_url }}" class="" alt="">
+            </div>
+            {%- if section.settings.show_sorting -%}
+              <div class="sort-box d-flex align-items-center">
+                <label class="heading-font" for="sortBy">{{ section.settings.sort_label }}</label>
+                <select class="form-select" name="sort_by" id="sortBy" form="XdFacetForm">
+                  {%- for option in collection.sort_options -%}
+                    <option value="{{ option.value }}" {% if option.value == sort_by %}selected{% endif %}>
+                      {{- option.name | escape -}}
+                    </option>
+                  {%- endfor -%}
+                </select>
+              </div>
+            {%- endif -%}
+          </div>
+        </div>
+
+        {%- comment -%}
+          What is currently on, in one scannable row. Each chip clears its own
+          value; the last one clears the lot. Shown at every width - see the
+          note on active_count above.
+
+          The wrapper is always in the DOM, empty or not, because the AJAX path
+          replaces its contents by id.
+        {%- endcomment -%}
+        <div id="XdFacetChips" class="xd-active-filters{% if active_count == 0 %} is-empty{% endif %}">
+          {%- if active_count > 0 -%}
+            {%- for filter in collection.filters -%}
+              {%- if filter.type == 'price_range' -%}
+                {%- if filter.min_value.value != blank or filter.max_value.value != blank -%}
+                  <button type="button" class="xd-active-filters__chip" data-xd-clear-price>
+                    {{- filter.min_value.value | default: 0 | money_without_trailing_zeros }}
+                    &ndash;
+                    {{ filter.max_value.value | default: filter.range_max | money_without_trailing_zeros -}}
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                {%- endif -%}
+              {%- else -%}
+                {%- for value in filter.active_values -%}
+                  {%- comment -%}
+                    A chip unticks the box it stands for rather than following
+                    url_to_remove: the checkboxes are the source of truth, and a
+                    navigation here would throw away any ticks the shopper has
+                    made since the last fetch.
+                  {%- endcomment -%}
+                  <button
+                    type="button"
+                    class="xd-active-filters__chip"
+                    data-xd-uncheck="{{ value.param_name | escape }}"
+                    data-xd-uncheck-value="{{ value.value | escape }}"
+                  >
+                    {{- value.label | escape }}<span aria-hidden="true">&times;</span>
+                  </button>
+                {%- endfor -%}
+              {%- endif -%}
+            {%- endfor -%}
+            <a class="xd-active-filters__clear" href="{{ clear_url }}" data-xd-clear-all>
+              {{- section.settings.clear_label -}}
+            </a>
+          {%- endif -%}
+        </div>
+
+        <div class="row">
+          <div class="col-lg-3">
+            {%- comment -%}
+              FILTER PANEL
+
+              `.offcanvas-lg` is Bootstrap's responsive variant: a fixed drawer
+              below 992px, plain static markup above it - which is the same
+              edge the `.col-lg-3` sidebar stacks at.
+
+              The offcanvas classes sit on a wrapper AROUND `.filter-box`, and
+              the accordion is deliberately NOT wrapped in `.offcanvas-body`,
+              because above 992px Bootstrap gives that element `display: flex`
+              and the desktop sidebar would shrink to its content width.
+
+              The panel stays inside the form. Bootstrap only fixes its
+              position, it never moves it in the DOM, so every input still
+              serialises with #XdFacetForm.
+
+              This subtree is NEVER replaced by the AJAX path - only its counts
+              and disabled states are synced - so open panels, scroll position
+              and the drawer itself survive a filter change.
+            {%- endcomment -%}
+            <div
+              class="xd-filter-panel offcanvas-lg offcanvas-start"
+              tabindex="-1"
+              id="XdFilterPanel"
+              aria-labelledby="XdFilterPanelTitle"
+            >
+              <div class="offcanvas-header">
+                <h2 class="xd-filter-panel__title heading-font" id="XdFilterPanelTitle">
+                  {{- section.settings.filter_label -}}
+                </h2>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="offcanvas"
+                  data-bs-target="#XdFilterPanel"
+                  aria-label="{{ 'accessibility.close' | t }}"
+                ></button>
+              </div>
+              <div class="filter-box" id="XdFilterBox">
+                <div class="accordion accordion-flush" id="filterAccordion">
+                {%- comment -%}
+                  ONE SHOPIFY FILTER CAN BECOME SEVERAL GROUPS.
+
+                  Material, Player Level, Playing Style, Weight and Rating are
+                  carried as prefixed product tags - "Material: Carbon Fiber",
+                  "Level: Advanced" - and so arrive as ONE "Product tags" filter
+                  whose values are the whole tag. Here that filter is sliced by
+                  prefix into a group each, and xd-facet-group strips the prefix
+                  off every visible label.
+
+                  They are tags rather than the metafields the store also has,
+                  because Shopify INTERSECTS multiple values of a list-metafield
+                  filter: measured on this store, material Graphite matches 3
+                  and Carbon Fiber matches 2, and both together match 0. Tag
+                  values are ORed - Paddles + Nets really does return 5 - which
+                  is the only behaviour under which "multi-select" means
+                  anything. The metafields are untouched and still correct; the
+                  sidebar just does not read them.
+
+                  A tag with no prefix (Pro Series, Tournament, the tags the
+                  automatic collections are built on) is not a filter group and
+                  is dropped unless "Show unprefixed tags" is on.
+                {%- endcomment -%}
+                {%- assign group_index = 0 -%}
+                {%- for filter in collection.filters -%}
+                  {%- liquid
+                    assign label_key = filter.label | downcase | strip
+                    assign presentation = filter.presentation | default: 'text'
+
+                    assign is_tag_filter = false
+                    if filter.param_name contains 'filter.p.tag'
+                      assign is_tag_filter = true
+                    endif
+                  -%}
+
+                  {%- if is_tag_filter and section.settings.split_tag_filter -%}
+                    {%- liquid
+                      # Distinct prefixes, in the order the values arrive.
+                      # Liquid cannot build a set, so they are collected into a
+                      # delimited string and uniq'd. "|" cannot appear in a
+                      # prefix - it is not legal in the part of a tag before the
+                      # colon here by convention, and a stray one would only
+                      # split one group in two.
+                      capture prefix_blob
+                        for value in filter.values
+                          if value.label contains ': '
+                            echo value.label | split: ': ' | first
+                            echo '|'
+                          endif
+                        endfor
+                      endcapture
+                      assign found_prefixes = prefix_blob | split: '|' | uniq
+
+                      # The merchant's running order wins; anything they did not
+                      # name follows in the order Shopify sent it, so a new
+                      # prefix appears without a theme edit.
+                      assign wanted = section.settings.tag_group_order | replace: ', ', ',' | replace: ' ,', ',' | split: ','
+                      capture ordered_blob
+                        for want in wanted
+                          if found_prefixes contains want
+                            echo want
+                            echo '|'
+                          endif
+                        endfor
+                        for found in found_prefixes
+                          unless wanted contains found
+                            echo found
+                            echo '|'
+                          endunless
+                        endfor
+                      endcapture
+                      assign ordered_prefixes = ordered_blob | split: '|'
+
+                      assign rating_group = section.settings.rating_group | strip
+                    -%}
+
+                    {%- for prefix in ordered_prefixes -%}
+                      {%- liquid
+                        assign group_index = group_index | plus: 1
+                        assign panel_id = 'facet-' | append: group_index
+
+                        assign prefix_key = prefix | downcase | strip
+
+                        assign style = 'checkbox'
+                        if prefix == rating_group
+                          assign style = 'rating'
+                        elsif swatch_labels contains prefix_key
+                          assign style = 'swatch'
+                        endif
+
+                        assign show_count = section.settings.show_counts
+                        if link_labels contains prefix_key
+                          assign show_count = true
+                        endif
+                      -%}
+                      {%- render 'xd-facet-group',
+                        filter: filter,
+                        prefix: prefix,
+                        group_label: prefix,
+                        style: style,
+                        panel_id: panel_id,
+                        show_count: show_count,
+                        rating_suffix: section.settings.rating_suffix,
+                        design_colours: design_colours
+                      -%}
+                    {%- endfor -%}
+
+                    {%- if section.settings.show_unprefixed_tags -%}
+                      {%- liquid
+                        assign group_index = group_index | plus: 1
+                        assign panel_id = 'facet-' | append: group_index
+                      -%}
+                      {%- render 'xd-facet-group',
+                        filter: filter,
+                        prefix: '',
+                        group_label: filter.label,
+                        style: 'checkbox',
+                        panel_id: panel_id,
+                        show_count: section.settings.show_counts,
+                        rating_suffix: section.settings.rating_suffix,
+                        design_colours: design_colours
+                      -%}
+                    {%- endif -%}
+
+                  {%- else -%}
+                    {%- liquid
+                      assign group_index = group_index | plus: 1
+                      assign panel_id = 'facet-' | append: group_index
+
+                      assign style = 'checkbox'
+                      if filter.type == 'price_range'
+                        assign style = 'price'
+                      elsif presentation == 'swatch' or presentation == 'image' or swatch_labels contains label_key
+                        assign style = 'swatch'
+                      elsif filter.param_name contains 'rating'
+                        assign style = 'rating'
+                      endif
+
+                      assign show_count = section.settings.show_counts
+                      if link_labels contains label_key
+                        assign show_count = true
+                      endif
+                    -%}
+                    {%- render 'xd-facet-group',
+                      filter: filter,
+                      prefix: '',
+                      group_label: filter.label,
+                      style: style,
+                      panel_id: panel_id,
+                      show_count: show_count,
+                      rating_suffix: section.settings.rating_suffix,
+                      design_colours: design_colours
+                    -%}
+                  {%- endif -%}
+                {%- else -%}
+                  <div class="accordion-item">
+                    <div class="accordion-body ps-3">
+                      <p class="filter-link mb-0">{{ section.settings.no_filters_text }}</p>
+                    </div>
+                  </div>
+                {%- endfor -%}
+                </div>
+              </div>
+              {%- comment -%}
+                The drawer's footer. The grid behind the drawer is already
+                updated by the time this is pressed - ticking a box fetches in
+                the background at every width - so Apply only has to close the
+                drawer and show the shopper the result, with the number of
+                matches on the button so nothing has to be taken on trust. It
+                stays a real submit button so the form still works with
+                JavaScript off; the script cancels the submit and closes the
+                drawer instead.
+              {%- endcomment -%}
+              <div class="xd-filter-panel__foot d-lg-none">
+                <a class="xd-filter-panel__clear" href="{{ clear_url }}" data-xd-clear-all>
+                  {{- section.settings.clear_label -}}
+                </a>
+                <button type="submit" form="XdFacetForm" class="btn btn-primary xd-filter-panel__apply" data-xd-apply>
+                  <span data-xd-apply-label>{{ section.settings.apply_label }}</span>
+                  <span data-xd-result-count>({{ collection.products_count }})</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-9">
+            {%- comment -%}
+              Everything the AJAX path replaces lives inside this one element,
+              and nothing that holds state does.
+            {%- endcomment -%}
+            <div id="XdFacetResults" data-xd-results data-product-count="{{ collection.products_count }}">
+              <div class="row g-4 bestsellers-slider">
+                {%- for product in collection.products -%}
+                  {%- comment -%}
+                    col-6 below 768px. A single full-width card per row turns six
+                    products into six screenfuls and gives nothing to compare
+                    against; 2-up is the phone product grid everywhere else on
+                    this site.
+                  {%- endcomment -%}
+                  <div class="col-6 col-md-4">
+                    {%- render 'xd-product-card',
+                      card_uid: forloop.index,
+                      product: product,
+                      style: 'bestsellers',
+                      buy_label: section.settings.buy_label,
+                      on_dark: false,
+                      show_rating: section.settings.show_rating
+                    -%}
+                  </div>
+                {%- else -%}
+                  <div class="col-12">
+                    <p class="filter-link">{{ section.settings.empty_text }}</p>
+                  </div>
+                {%- endfor -%}
+              </div>
+
+              {%- if paginate.pages > 1 -%}
+                <nav class="xd-pager d-flex justify-content-center gap-2 mt-5">
+                  {%- if paginate.previous -%}
+                    <a class="xd-pager__link" href="{{ paginate.previous.url }}" aria-label="{{ section.settings.prev_label | escape }}">{{ section.settings.prev_label }}</a>
+                  {%- endif -%}
+                  {%- for part in paginate.parts -%}
+                    {%- if part.is_link -%}
+                      <a class="xd-pager__link" href="{{ part.url }}">{{ part.title }}</a>
+                    {%- elsif part.title == paginate.current_page -%}
+                      <span class="xd-pager__link is-active" aria-current="page">{{ part.title }}</span>
+                    {%- else -%}
+                      <span class="xd-pager__link">{{ part.title }}</span>
+                    {%- endif -%}
+                  {%- endfor -%}
+                  {%- if paginate.next -%}
+                    <a class="xd-pager__link" href="{{ paginate.next.url }}" aria-label="{{ section.settings.next_label | escape }}">{{ section.settings.next_label }}</a>
+                  {%- endif -%}
+                </nav>
+              {%- endif -%}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+{%- endpaginate -%}
+
+<script>
+  (function () {
+    // The controls live outside the form and are bound to it by their `form`
+    // attribute (see the comment on the form above). Events bubble through the
+    // DOM, not through form ownership, so they are caught on the wrapper.
+    var scope = document.getElementById('XdFacets');
+    var form = document.getElementById('XdFacetForm');
+    if (!scope || !form) return;
+
+    var sectionId = scope.dataset.sectionId;
+    var collectionUrl = scope.dataset.collectionUrl;
+    var results = scope.querySelector('[data-xd-results]');
+    var chips = document.getElementById('XdFacetChips');
+    var filterBox = document.getElementById('XdFilterBox');
+    var panel = document.getElementById('XdFilterPanel');
+
+    var lower = scope.querySelector('#lower');
+    var upper = scope.querySelector('#upper');
+    var minLabel = scope.querySelector('[data-xd-price-min]');
+    var maxLabel = scope.querySelector('[data-xd-price-max]');
+    var moneyFormat = {{ shop.money_format | json }};
+    var localeCode = {{ request.locale.iso_code | json }};
+
+    // Long enough that ticking several boxes in a row is one request, short
+    // enough that a single tick still feels immediate.
+    var DEBOUNCE = 320;
+
+    var drawer = window.matchMedia('(max-width: 991.98px)');
+    var timer = null;
+    var inFlight = null;
+
+    /* ---------------------------------------------------------------------
+       Price slider
+       --------------------------------------------------------------------- */
+
+    // Renders a whole-currency amount through the shop's own money format, so
+    // the label matches the server-rendered price everywhere else on the page.
+    function money(amount) {
+      return moneyFormat.replace(/\{\{\s*\w+\s*\}\}/, function () {
+        return amount.toLocaleString(localeCode);
+      });
+    }
+
+    function syncPriceLabels() {
+      if (!lower || !upper) return;
+      // Keep the handles from crossing over.
+      if (Number(lower.value) > Number(upper.value)) {
+        lower.value = upper.value;
+      }
+      if (minLabel) minLabel.textContent = money(Number(lower.value));
+      if (maxLabel) maxLabel.textContent = money(Number(upper.value));
+    }
+
+    // The price inputs always carry a value, so left untouched they would pin
+    // filter.v.price.gte/lte onto every URL. Disable them (so they are not
+    // serialised) whenever they still span the full range.
+    function syncPriceInputs() {
+      if (!lower || !upper) return;
+      var untouched =
+        Number(lower.value) <= Number(lower.min) && Number(upper.value) >= Number(upper.max);
+      lower.disabled = untouched;
+      upper.disabled = untouched;
+    }
+
+    function priceIsActive() {
+      return Boolean(lower && !lower.disabled);
+    }
+
+    function resetPrice() {
+      if (!lower || !upper) return;
+      lower.value = lower.min;
+      upper.value = upper.max;
+      syncPriceLabels();
+      syncPriceInputs();
+    }
+
+    /* ---------------------------------------------------------------------
+       The query string
+       --------------------------------------------------------------------- */
+
+    // One source of truth: whatever is ticked right now. FormData repeats a
+    // name once per checked box, which is exactly the shape Shopify's filter
+    // params take for a multi-select group.
+    function currentSearch() {
+      syncPriceInputs();
+      var params = new URLSearchParams();
+      new FormData(form).forEach(function (value, key) {
+        if (value !== '') params.append(key, value);
+      });
+      var search = params.toString();
+      return search ? '?' + search : '';
+    }
+
+    function selectedCount() {
+      var total = filterBox
+        ? filterBox.querySelectorAll('[data-xd-facet-input]:checked').length
+        : 0;
+      if (priceIsActive()) total += 1;
+      return total;
+    }
+
+    /* ---------------------------------------------------------------------
+       In-place sidebar sync
+
+       The sidebar is never re-rendered - replacing it would collapse the
+       accordion, lose the scroll position and, on a phone, tear the open
+       drawer out of the DOM mid-tap. Instead the response's counts and
+       exhausted states are copied onto the inputs that are already there,
+       keyed by name + value.
+       --------------------------------------------------------------------- */
+    /*
+      Key for matching a live input against the same value in a fetched
+      document. A space will not do as the separator: a tag value is free to
+      contain one ("Material: Carbon Fiber"), so name+' '+value could in
+      principle be ambiguous. A param name cannot contain a NUL.
+    */
+    function facetKey(input) {
+      return input.name + '\u0000' + input.value;
+    }
+
+    function syncCountsFrom(doc) {
+      if (!filterBox || !doc) return;
+      var fresh = doc.getElementById('XdFilterBox');
+      if (!fresh) return;
+
+      var next = {};
+      fresh.querySelectorAll('[data-xd-facet-input]').forEach(function (input) {
+        next[facetKey(input)] = {
+          count: Number(input.dataset.xdCount || 0),
+          disabled: input.disabled,
+        };
+      });
+
+      filterBox.querySelectorAll('[data-xd-facet-input]').forEach(function (input) {
+        var fact = next[facetKey(input)];
+        // A value the response no longer lists cannot be reached from here:
+        // leave a ticked box alone (it is what produced the result) and grey
+        // out an unticked one.
+        if (!fact) {
+          if (!input.checked) input.disabled = true;
+          return;
+        }
+        input.dataset.xdCount = fact.count;
+        // Never disable what the shopper has ticked - that would trap them
+        // with no way to untick it.
+        input.disabled = input.checked ? false : fact.disabled;
+
+        var row = input.closest('.form-check, .color-option, .review-star');
+        var text = row ? row.querySelector('[data-xd-count-text]') : null;
+        if (text) text.textContent = fact.count;
+      });
+    }
+
+    // Per-group badges are counted off the live checkboxes, not the response,
+    // so they are right on the tap rather than a request later.
+    function syncBadges() {
+      if (!filterBox) return;
+      filterBox.querySelectorAll('[data-xd-group]').forEach(function (group) {
+        var badge = group.querySelector('[data-xd-group-count]');
+        if (!badge) return;
+        var n = group.querySelectorAll('[data-xd-facet-input]:checked').length;
+        if (group.querySelector('[data-xd-price]')) n = priceIsActive() ? 1 : 0;
+        badge.textContent = n;
+        badge.hidden = n === 0;
+      });
+
+      var total = scope.querySelector('[data-xd-total-count]');
+      if (total) {
+        var n = selectedCount();
+        total.textContent = n;
+        total.hidden = n === 0;
+      }
+    }
+
+    function syncResultCount(count) {
+      var el = scope.querySelector('[data-xd-result-count]');
+      if (el && typeof count === 'number' && !isNaN(count)) el.textContent = '(' + count + ')';
+    }
+
+    /* ---------------------------------------------------------------------
+       Fetch and swap
+       --------------------------------------------------------------------- */
+
+    function request(url, push) {
+      var target = url + (url.indexOf('?') === -1 ? '?' : '&') + 'section_id=' + sectionId;
+
+      // Only the newest request may write to the DOM. Ticking four boxes
+      // faster than the debounce can absorb would otherwise race, and the
+      // slowest response - not the last one - would win.
+      if (inFlight) inFlight.abort();
+      var controller = new AbortController();
+      inFlight = controller;
+
+      if (results) results.classList.add('is-loading');
+      scope.setAttribute('aria-busy', 'true');
+
+      fetch(target, { signal: controller.signal })
+        .then(function (response) {
+          if (!response.ok) throw new Error(response.status);
+          return response.text();
+        })
+        .then(function (html) {
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+
+          var freshResults = doc.getElementById('XdFacetResults');
+          if (freshResults && results) {
+            results.innerHTML = freshResults.innerHTML;
+            results.dataset.productCount = freshResults.dataset.productCount || '0';
+            syncResultCount(Number(freshResults.dataset.productCount));
+          }
+
+          var freshChips = doc.getElementById('XdFacetChips');
+          if (freshChips && chips) {
+            chips.innerHTML = freshChips.innerHTML;
+            chips.classList.toggle('is-empty', freshChips.classList.contains('is-empty'));
+          }
+
+          syncCountsFrom(doc);
+          syncBadges();
+
+          if (push !== false && window.history && window.history.pushState) {
+            window.history.pushState({ xdFacets: true }, '', url);
+          }
+        })
+        .catch(function (error) {
+          if (error.name === 'AbortError') return;
+          // A filtered page the shopper can actually see beats a silent
+          // failure: fall back to the navigation this replaced.
+          window.location.href = url;
+        })
+        .finally(function () {
+          if (inFlight === controller) {
+            inFlight = null;
+            if (results) results.classList.remove('is-loading');
+            scope.removeAttribute('aria-busy');
+          }
+        });
+    }
+
+    function apply(immediate) {
+      // Badges track the checkboxes, so they update on the tap rather than
+      // waiting for the response.
+      syncBadges();
+
+      var url = collectionUrl + currentSearch();
+      if (timer) clearTimeout(timer);
+      if (immediate) {
+        timer = null;
+        request(url, true);
+        return;
+      }
+      timer = setTimeout(function () {
+        timer = null;
+        request(url, true);
+      }, DEBOUNCE);
+    }
+
+    function flush() {
+      if (!timer) return;
+      clearTimeout(timer);
+      timer = null;
+      request(collectionUrl + currentSearch(), true);
+    }
+
+    function closeDrawer() {
+      if (!panel || !drawer.matches || !window.bootstrap) return;
+      var instance = window.bootstrap.Offcanvas.getInstance(panel);
+      if (instance) instance.hide();
+    }
+
+    /* ---------------------------------------------------------------------
+       Events
+       --------------------------------------------------------------------- */
+
+    scope.addEventListener('input', function (event) {
+      if (event.target.hasAttribute('data-xd-price')) syncPriceLabels();
+    });
+
+    scope.addEventListener('change', function (event) {
+      var target = event.target;
+
+      if (target.hasAttribute('data-xd-price')) {
+        syncPriceLabels();
+        // Dragging fires `input` continuously - only the release reaches here,
+        // and it still goes through the debounce so moving both handles in one
+        // gesture is one request.
+        apply(false);
+        return;
+      }
+
+      if (target.hasAttribute('data-xd-facet-input')) {
+        // The rating rows are labels wrapping a hidden checkbox, so their
+        // active styling has to be driven here rather than by CSS.
+        var star = target.closest('.review-star');
+        if (star) star.classList.toggle('is-active', target.checked);
+        apply(false);
+        return;
+      }
+
+      // Sorting is a deliberate one-off, not something you build up.
+      if (target.name === 'sort_by') apply(true);
+    });
+
+    scope.addEventListener('click', function (event) {
+      // Chip: untick the box it stands for.
+      var chip = event.target.closest('[data-xd-uncheck]');
+      if (chip) {
+        event.preventDefault();
+        var name = chip.getAttribute('data-xd-uncheck');
+        var value = chip.getAttribute('data-xd-uncheck-value');
+        if (filterBox) {
+          filterBox.querySelectorAll('[data-xd-facet-input]').forEach(function (input) {
+            if (input.name === name && input.value === value) {
+              input.checked = false;
+              var star = input.closest('.review-star');
+              if (star) star.classList.remove('is-active');
+            }
+          });
+        }
+        apply(true);
+        return;
+      }
+
+      if (event.target.closest('[data-xd-clear-price]')) {
+        event.preventDefault();
+        resetPrice();
+        apply(true);
+        return;
+      }
+
+      var clear = event.target.closest('[data-xd-clear-all]');
+      if (clear) {
+        event.preventDefault();
+        if (filterBox) {
+          filterBox.querySelectorAll('[data-xd-facet-input]').forEach(function (input) {
+            input.checked = false;
+            input.disabled = false;
+            var star = input.closest('.review-star');
+            if (star) star.classList.remove('is-active');
+          });
+        }
+        resetPrice();
+        apply(true);
+        closeDrawer();
+        return;
+      }
+
+      // Pagination stays in the page too, so the shopper does not lose the
+      // sidebar's scroll position between pages.
+      var pageLink = event.target.closest('.xd-pager__link[href]');
+      if (pageLink) {
+        event.preventDefault();
+        request(pageLink.getAttribute('href'), true);
+        if (results) results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+
+    // With JavaScript on, the drawer's Apply button has nothing left to submit
+    // - the grid behind it is already current - so it flushes anything still
+    // waiting on the debounce and closes the drawer.
+    scope.addEventListener('submit', function (event) {
+      event.preventDefault();
+      flush();
+      closeDrawer();
+    });
+
+    // Back/forward through the states this script pushed. A reload is the
+    // honest answer: the sidebar was mutated in place, so there is no snapshot
+    // to restore from.
+    window.addEventListener('popstate', function () {
+      window.location.reload();
+    });
+
+    syncPriceLabels();
+    syncPriceInputs();
+    syncBadges();
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "XD Collection grid",
+  "settings": [
+    {
+      "type": "text",
+      "id": "filter_label",
+      "label": "Filter label",
+      "default": "FILTERS BY"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sorting",
+      "label": "Show sort dropdown",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "sort_label",
+      "label": "Sort label",
+      "default": "SORT BY"
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 3,
+      "max": 36,
+      "step": 3,
+      "default": 9
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "label": "Show product rating",
+      "default": true,
+      "info": "Requires a product rating metafield (e.g. from a reviews app)"
+    },
+    {
+      "type": "header",
+      "content": "Filters"
+    },
+    {
+      "type": "paragraph",
+      "content": "The sidebar renders whatever filters are enabled in the Search & Discovery app. Colour groups need a swatch (product option or metaobject) to show as chips."
+    },
+    {
+      "type": "paragraph",
+      "content": "Every group is multi-select: several values can be ticked in one group and across groups, and the grid updates in place without reloading the page."
+    },
+    {
+      "type": "paragraph",
+      "content": "On phones and tablets the sidebar opens as a drawer. These two labels are the drawer's footer buttons and the chip that clears the active filters."
+    },
+    {
+      "type": "text",
+      "id": "apply_label",
+      "label": "Drawer apply button",
+      "default": "Show results"
+    },
+    {
+      "type": "text",
+      "id": "clear_label",
+      "label": "Clear filters label",
+      "default": "Clear all"
+    },
+    {
+      "type": "header",
+      "content": "Tag filter groups"
+    },
+    {
+      "type": "paragraph",
+      "content": "Material, Player Level, Playing Style, Weight and Rating are carried as prefixed product tags (\"Material: Carbon Fiber\"), because Shopify intersects multiple values of a metafield filter but ORs multiple tags - and multi-select only means something if the values are ORed. Enable the Product tags filter in Search & Discovery for these to appear."
+    },
+    {
+      "type": "checkbox",
+      "id": "split_tag_filter",
+      "label": "Split the tag filter into groups",
+      "default": true,
+      "info": "Renders one accordion group per tag prefix, with the prefix stripped off each label"
+    },
+    {
+      "type": "text",
+      "id": "tag_group_order",
+      "label": "Tag group order",
+      "default": "Material, Level, Style, Weight, Rating, Series",
+      "info": "Comma-separated prefixes, in the order they should appear. A prefix not named here follows in Shopify's own order."
+    },
+    {
+      "type": "text",
+      "id": "rating_group",
+      "label": "Rating tag prefix",
+      "default": "Rating",
+      "info": "This group is drawn as star rows rather than checkboxes"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_unprefixed_tags",
+      "label": "Show unprefixed tags",
+      "default": false,
+      "info": "Tags with no prefix are the ones the automatic collections are built on (Pro Series, Tournament). Off keeps them out of the sidebar."
+    },
+    {
+      "type": "text",
+      "id": "link_style_filters",
+      "label": "Always-show-count filter groups",
+      "default": "Product Type, Category",
+      "info": "Comma-separated filter names whose result counts are always shown. Both spellings of the product-type group are listed so renaming its label in Search & Discovery does not silently drop its counts."
+    },
+    {
+      "type": "text",
+      "id": "swatch_style_filters",
+      "label": "Swatch-style filter groups",
+      "default": "Colors",
+      "info": "Comma-separated filter names always shown as colour chips, even when Shopify serves no swatch"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_counts",
+      "label": "Show result counts on checkboxes",
+      "default": false,
+      "info": "The groups named above always show their count"
+    },
+    {
+      "type": "text",
+      "id": "rating_suffix",
+      "label": "Rating filter suffix",
+      "default": "& Up"
+    },
+    {
+      "type": "text",
+      "id": "no_filters_text",
+      "label": "Text when no filters exist",
+      "default": "No filters available. Add them in the Search & Discovery app."
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "Empty collection text",
+      "default": "No products found."
+    },
+    {
+      "type": "text",
+      "id": "buy_label",
+      "label": "Card button label",
+      "default": "BUY NOW"
+    },
+    {
+      "type": "text",
+      "id": "prev_label",
+      "label": "Pagination previous",
+      "default": "←"
+    },
+    {
+      "type": "text",
+      "id": "next_label",
+      "label": "Pagination next",
+      "default": "→"
+    }
+  ],
+  "presets": [
+    {
+      "name": "XD Collection grid"
+    }
+  ]
+}
+{% endschema %}

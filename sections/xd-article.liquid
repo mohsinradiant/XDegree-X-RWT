@@ -1,0 +1,119 @@
+{% comment %}
+  Markup copied verbatim from the supplied blog-details.html
+  (.blog-list-section / .blog-full). Content comes from the native article.
+{% endcomment %}
+<section class="blog-list-section section-tb-padding96 bg-light">
+  <div class="container custom-width">
+    <div class="row g-3">
+      <div class="col-md-10 mx-auto">
+        <div class="blog-full bg-white">
+          {%- if article.image -%}
+            <div class="blog__media">
+              <img src="{{ article.image | image_url: width: 1400 }}" alt="{{ article.image.alt | escape }}" class="img-fluid w-100 rounded-3">
+            </div>
+          {%- endif -%}
+          <div class="row">
+            <div class="col-md-12 mx-auto">
+              <div class="blog-card__meta-list justify-content-between d-flex gap-2 mt-3 mb-3 px-4">
+                <div class="blog-card__meta d-flex align-items-center gap-2 rug-card__meta">
+                  <span class="blog-card__meta-icon fs18"><i class="fa-regular fa-clock"></i></span>
+                  <span class="fs12 text-primary">{{ article.published_at | date: format: 'date' }}</span>
+                </div>
+                {%- if article.author != blank -%}
+                  <div class="blog-card__meta d-flex align-items-center gap-2 rug-card__meta">
+                    <span class="blog-card__meta-icon fs18"><i class="fa-regular fa-user-pen"></i></span>
+                    <span class="fs12 text-primary">{{ section.settings.author_prefix }} {{ article.author }}</span>
+                  </div>
+                {%- endif -%}
+              </div>
+              <div class="blog-card__body mt-3 px-4 card-body fs16 text-primary fw400 d-flex flex-column justify-content-between">
+                <h3 class="heading-font blog-card__body--title text-primary mb-3 fw700">{{ article.title }}</h3>
+                <div class="xd-rte">{{ article.content }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {%- if blog.comments_enabled? -%}
+          {%- comment -%}
+            `blog-comments` carries no styling of its own. It names the second
+            .blog-full so the reveal layer can tell the two apart - the article
+            card is revealed a piece at a time, this one as a single unit.
+          {%- endcomment -%}
+          <div class="blog-full blog-comments bg-white mt-4 p-4">
+            {%- if article.comments_count > 0 -%}
+              <h4 class="heading-font text-primary mb-3">{{ article.comments_count }} {{ section.settings.comments_label }}</h4>
+              {%- for comment in article.comments -%}
+                <div class="mb-3">
+                  <p class="fs14 text-primary mb-1">{{ comment.content }}</p>
+                  <span class="fs12">{{ comment.author }}</span>
+                </div>
+              {%- endfor -%}
+            {%- endif -%}
+            {%- form 'new_comment', article -%}
+              {%- if form.posted_successfully? -%}
+                <p class="fs14 text-primary">{{ 'blogs.article.success' | t }}</p>
+              {%- endif -%}
+              <div class="form-group mb-3">
+                <input type="text" name="comment[author]" class="form-control" placeholder="{{ section.settings.name_placeholder | escape }}" required>
+              </div>
+              <div class="form-group mb-3">
+                <input type="email" name="comment[email]" class="form-control" placeholder="{{ section.settings.email_placeholder | escape }}" required>
+              </div>
+              <div class="form-group mb-3">
+                <textarea name="comment[body]" rows="4" class="form-control" placeholder="{{ section.settings.comment_placeholder | escape }}" required></textarea>
+              </div>
+              <button type="submit" class="btn sm-btn product-card-btn btn-primary">
+                {{ section.settings.submit_label }} <span class="btn-icon"><img src="{{ 'rt-icon.svg' | asset_url }}" alt=""></span>
+              </button>
+            {%- endform -%}
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Article",
+  "settings": [
+    {
+      "type": "text",
+      "id": "author_prefix",
+      "label": "Author prefix",
+      "default": "By"
+    },
+    {
+      "type": "text",
+      "id": "comments_label",
+      "label": "Comments heading word",
+      "default": "comments"
+    },
+    {
+      "type": "text",
+      "id": "name_placeholder",
+      "label": "Comment name placeholder",
+      "default": "Name"
+    },
+    {
+      "type": "text",
+      "id": "email_placeholder",
+      "label": "Comment email placeholder",
+      "default": "Email"
+    },
+    {
+      "type": "text",
+      "id": "comment_placeholder",
+      "label": "Comment body placeholder",
+      "default": "Comment"
+    },
+    {
+      "type": "text",
+      "id": "submit_label",
+      "label": "Comment submit label",
+      "default": "Post comment"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,2998 @@
+/*
+  X-Degree responsive layer.
+
+  Loaded after xd-main.css / xd-overrides.css, so it wins on equal specificity
+  and !important is only needed to beat Bootstrap utility classes.
+
+  ---------------------------------------------------------------------------
+  BREAKPOINTS
+
+  These are Bootstrap 5's own edges, deliberately. The markup is built out of
+  .col-md-* / .col-lg-*, so a stylesheet breakpoint that does not line up with
+  Bootstrap's leaves a dead band where the columns have already stacked but
+  none of the styling that assumes stacking has kicked in. (The previous
+  756px/400px pair did exactly that between 756px and 768px.)
+
+      <= 1199.98px   xl   nav collapses -> off-canvas drawer
+      <= 991.98px    lg   .col-lg-* stack -> set builder, why-shop
+      <= 767.98px    md   .col-md-* stack -> the mobile design proper
+      <= 479.98px    sm-  small phones, tightening only
+
+  Each block only contains what genuinely changes at that width. Nothing here
+  applies at 1200px and up, so desktop is untouched.
+
+  ---------------------------------------------------------------------------
+  DESIGN NOTES (mobile)
+
+  - Vertical rhythm halves: 96px section padding -> 48px. At phone width 96px
+    reads as a broken page, not as breathing room.
+  - One thumb-reachable primary action per section, full width, >=44px.
+  - Product rows are 2-up grids or fractional-slide sliders. Never 1-up: a
+    single full-width card gives no scroll affordance and buries the section.
+  - Hover-only affordances are promoted into normal flow. There is no hover.
+  - Text inputs are 16px so iOS does not zoom the viewport on focus.
+*/
+
+/* ==========================================================================
+   0. Plumbing that applies at every width
+   ========================================================================== */
+
+/*
+  In-page scrolling. The footer's "back to top" is an `href="#"`, which
+  otherwise teleports the reader from the bottom of a 6,000px page to the top
+  with nothing to say what happened.
+
+  Guarded, because a long smooth scroll is precisely the kind of motion the
+  reduced-motion setting exists to stop. It is scoped to the document scroller,
+  so the drawers and the carousels - which ask for their own behaviour
+  explicitly - are unaffected.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/*
+  Sections whose backdrop is art-directed pass their image in as a custom
+  property (see xd-set-builder.liquid / xd-why-shop.liquid) so the breakpoint
+  can swap it. An inline background-image would always outrank a stylesheet.
+*/
+.xd-set-builder,
+.why-shop-section {
+  background-image: var(--xd-bg);
+}
+
+/*
+  Hero backdrop. Was a CSS background-image; now a real <img> so the desktop
+  and mobile crops can be different files and so the browser can pick a size
+  from srcset. object-fit/position reproduce the old cover / center-right.
+*/
+.hero_banner__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.hero_banner__media picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hero_banner__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center right;
+}
+
+/*
+  Mobile-art placeholder. Hidden at every width by default - above 768px the
+  desktop photo is the right image and there is nothing missing.
+*/
+.hero_banner__placeholder {
+  display: none;
+}
+
+/* Transparent by default: on desktop the copy sits over the photo's own dark
+   side, exactly as designed. Only the mobile crop needs help. */
+.hero_banner__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hero_banner > .container {
+  position: relative;
+  z-index: 2;
+}
+
+/*
+  Drawer-only content. At >=1200px Bootstrap turns the off-canvas panel back
+  into a static flex row and hides `.offcanvas-header` for us - but not custom
+  children, so this block would otherwise render inline in the desktop header.
+  Off by default, switched on in the drawer breakpoint below.
+*/
+.site-header__drawer-foot {
+  display: none;
+}
+
+/*
+  CLICKABLE PRODUCT CARDS
+
+  The whole card is a link to the PDP, and the CTA adds to cart instead of
+  navigating. Two things make that coexist:
+
+    * .product-card-overlay is an absolutely positioned anchor filling the
+      card. It cannot WRAP the card - a <button>/<form> inside an <a> is
+      invalid HTML and the add-to-cart would stop working - so it sits on top
+      instead;
+    * the CTA is lifted above the overlay with z-index, so taps on it reach
+      the button rather than the link underneath.
+
+  .product-card gets `position: relative` to anchor the overlay.
+  .product-card-content keeps its own `position: relative` untouched, because
+  the desktop hover-reveal button is positioned against IT - re-pointing that
+  would move the button on desktop.
+*/
+.product-card {
+  position: relative;
+}
+
+.product-card-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.product-card-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.product-card-link:hover,
+.product-card-link:focus {
+  color: inherit;
+}
+
+/*
+  Deliberately NOT setting `position` on the CTA here.
+
+  On desktop the button is `position: absolute; z-index: 2` (main.css, the
+  hover-reveal), so it already sits above the overlay - and a rule here would
+  share that exact selector, load later, and drag the button back into flow,
+  growing every card. Measured when I got this wrong: +185px of page height.
+
+  The wrappers stay static for the same reason: giving them `position:
+  relative` would make them the containing block for that absolute button and
+  move it. They only need to not contribute layout of their own.
+*/
+.product-card-form,
+.product-card-form__form {
+  display: block;
+  margin: 0;
+}
+
+/*
+  Submit spinner.
+
+  On submit Dawn adds `.loading` to the button and unhides the spinner, but it
+  only CENTRES that spinner for its own `.button` class. This design's button is
+  `.product-card-btn`, so Dawn's `.loading__spinner { position: absolute }`
+  applied with no offsets - the spinner fell back to its static position, which
+  is after the label, and sat on top of it.
+
+  Centre it on the button, and take the label and arrow out of sight so the
+  spinner replaces them instead of sharing the space. `opacity` rather than
+  `display` so the button keeps its width and does not jump mid-submit.
+*/
+.product-card-btn {
+  position: relative;
+}
+
+.product-card-btn.loading > span {
+  opacity: 0;
+}
+
+.product-card-btn .loading__spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+
+.product-card-btn .loading__spinner.hidden {
+  display: none;
+}
+
+.product-card-btn .loading__spinner .spinner {
+  width: 20px;
+  height: 20px;
+}
+
+/* Dawn strokes the path with --color-foreground, which is dark-on-dark on this
+   button. currentColor tracks the button instead - white on the dark card
+   style, dark on the white trending one. */
+.product-card-btn .loading__spinner .path {
+  stroke: currentColor;
+}
+
+.product-card-btn[aria-disabled='true'],
+.product-card-btn.is-sold-out {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/*
+  FOCUS RINGS
+
+  Bootstrap draws its ring on plain `:focus`, which fires on tap and click as
+  well as keyboard - so tapping the burger left a 4px box around it
+  (`.navbar-toggler:focus { box-shadow: 0 0 0 0.25rem }`), exaggerated here
+  because the toggler is a third of the header wide. `.btn-close` does the same.
+
+  `:focus-visible` is the browser's own "this person is navigating by keyboard"
+  signal. Suppressing the ring only when it is ABSENT removes it for pointer and
+  touch users - the effect you were seeing - while keyboard users keep the one
+  cue they have for where they are on the page. Removing it outright would fail
+  WCAG 2.4.7 and make the site unnavigable without a mouse, so the ring is kept
+  for Tab and restyled on-brand below.
+
+  In a browser too old to know `:focus-visible`, the whole selector is invalid
+  and dropped, so behaviour falls back to Bootstrap's - never to "no indicator".
+*/
+a:focus:not(:focus-visible),
+button:focus:not(:focus-visible),
+[role='button']:focus:not(:focus-visible),
+[tabindex]:focus:not(:focus-visible),
+.btn:focus:not(:focus-visible),
+.btn-close:focus:not(:focus-visible),
+.navbar-toggler:focus:not(:focus-visible),
+.swiper-pagination-bullet:focus:not(:focus-visible),
+.why-shop-features-dot:focus:not(:focus-visible) {
+  outline: 0;
+  box-shadow: none;
+}
+
+/* Keyboard only, and in the brand red rather than Bootstrap's default glow. */
+a:focus-visible,
+button:focus-visible,
+.btn:focus-visible,
+.btn-close:focus-visible,
+.navbar-toggler:focus-visible,
+.why-shop-features-dot:focus-visible {
+  outline: 2px solid #d50032;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/*
+  The marquee's duplicate list exists only to make the mobile loop seamless.
+  Above the breakpoint the list is a plain stack, so the copy must not show.
+*/
+.pickleball-card-list__clone {
+  display: none;
+}
+
+/*
+  Price label. The setting's <br> is split into spans in xd-set-builder.liquid
+  so each breakpoint can choose; block here reproduces exactly what the <br>
+  did, and the mobile block switches them inline for a single row.
+*/
+.pickleball-card__price-label span {
+  display: block;
+}
+
+/* ==========================================================================
+   0b. Entrance animation - initial states
+
+   These are the ONLY rules that hide animated content, and they are gated on
+   `html.xd-anim`, which an inline script in theme.liquid <head> adds before
+   first paint. xd-animations.js hands each element to GSAP and then removes
+   the class, so from that moment GSAP owns the value, not CSS.
+
+   Three things keep this from ever stranding content invisible:
+     * the class is never added when prefers-reduced-motion is set;
+     * the head script strips it after 2.5s if the script never initialised;
+     * the selector list is scoped to elements the script actually claims.
+
+   Keep this list in sync with the groups in xd-animations.js.
+   ========================================================================== */
+
+/* --- home page --- */
+.xd-anim [data-xd-hero] > *,
+.xd-anim .xd-section-head .sub-heading,
+.xd-anim .xd-section-head .all-heading,
+.xd-anim .xd-section-head__note,
+.xd-anim .xd-section-head__cta,
+.xd-anim .section-heading .sub-heading,
+.xd-anim .section-heading .all-heading,
+.xd-anim .xd-product-grid > [class*='col-'],
+.xd-anim .trending-slider,
+.xd-anim .categories-slider,
+.xd-anim .pickleball-card__media,
+.xd-anim .pickleball-card--widget > *,
+.xd-anim .why-shop-col--media,
+.xd-anim .why-shop-col--features .why-shop-left-item,
+.xd-anim .why-shop-col--stats .why-shop-left-item,
+.xd-anim .product-trusted__grid > [class*='col-'],
+.xd-anim .trust-bar .row > [class*='col-'],
+.xd-anim .footer__nav-grid > [class*='col-'],
+
+/* --- about, blog, article, FAQ, register, collection, policy --- */
+.xd-anim .inner-banner-content [class*='col-'] > *,
+.xd-anim .our-story-section .col-lg-7 > *,
+.xd-anim .our-story-section .col-lg-5 > *,
+.xd-anim .xd-shop-cards .row.mb-5 .sub-heading,
+.xd-anim .xd-shop-cards .row.mb-5 .all-heading,
+.xd-anim .xd-shop-cards .row.mb-5 p,
+.xd-anim .xd-shop-cards .row.mb-5 .btn,
+.xd-anim .xd-shop-cards .row:not(.mb-5) > [class*='col-'],
+.xd-anim .fbf-accordion .accordion-item,
+.xd-anim .blog-listing .row > [class*='col-'],
+.xd-anim .xd-pager,
+.xd-anim .blog__media,
+.xd-anim .blog-card__meta-list,
+.xd-anim .blog-card__body--title,
+.xd-anim .blog-card__body .xd-rte,
+.xd-anim .blog-comments,
+.xd-anim .register-image,
+.xd-anim .register-form h4,
+.xd-anim .register-form .form-group,
+.xd-anim .all-product .text-center > .all-heading,
+.xd-anim .all-product .row > .col,
+.xd-anim .bestsellers-slider.row > [class*='col-'],
+.xd-anim .privacy-policy-section .row > [class*='col-'],
+.xd-anim .shopify-policy__title,
+.xd-anim .shopify-policy__body,
+
+/* --- product --- */
+.xd-anim .fbf-gallery__thumbs,
+.xd-anim .fbf-info__meta,
+.xd-anim .fbf-info__title,
+.xd-anim .fbf-info__tag-line,
+.xd-anim .fbf-info__price,
+.xd-anim .fbf-info__label,
+.xd-anim .fbf-buy-row,
+.xd-anim .fbf-info__disc,
+.xd-anim .fbf-trust,
+.xd-anim .product-tabs__bar,
+.xd-anim .product-description-section .tab-content {
+  opacity: 0;
+}
+
+/*
+  The theme editor re-renders sections after the class has been removed, so
+  nothing below 0b applies there - xd-animations.js re-runs on
+  shopify:section:load instead.
+*/
+
+/* ==========================================================================
+   1. <= 1199.98px - navigation becomes an off-canvas drawer
+   ========================================================================== */
+
+@media (max-width: 1199.98px) {
+  .site-header__drawer.offcanvas {
+    width: min(86vw, 360px);
+    background-color: #0d0d0d;
+    border: 0;
+  }
+
+  /*
+    The "MENU" label is gone visually - a drawer full of nav links does not
+    need to be told it is a menu. It stays in the DOM as .visually-hidden so
+    aria-labelledby still names the dialog for screen readers.
+  */
+  .site-header__drawer-head {
+    justify-content: flex-end;
+    padding: 12px 12px 4px;
+    border-bottom: 0;
+  }
+
+  .site-header__drawer-head .btn-close {
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    background-size: 13px 13px;
+    border-radius: 50%;
+    opacity: 0.7;
+  }
+
+  .site-header__drawer-head .btn-close:hover,
+  .site-header__drawer-head .btn-close:focus {
+    opacity: 1;
+  }
+
+  /*
+    Blur and dim the page behind the drawer. Bootstrap's backdrop already
+    blocks interaction and locks body scroll; this gives it depth so the drawer
+    reads as a layer above the site rather than a panel pasted onto it.
+  */
+  .offcanvas-backdrop {
+    background-color: rgb(8 8 8 / 55%);
+    -webkit-backdrop-filter: blur(8px) saturate(0.85);
+    backdrop-filter: blur(8px) saturate(0.85);
+  }
+
+  .offcanvas-backdrop.show {
+    opacity: 1;
+  }
+
+  .site-header__drawer-body {
+    display: flex;
+    flex-direction: column;
+    padding: 6px 0 24px;
+  }
+
+  .site-header__drawer .site-header__nav {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  /* Beats `.site-header__nav-link { padding: 0 24px !important }` in main.css.
+     Full-width rows, 15px+ text: a nav link is the one thing on the page a
+     user must not have to aim at. */
+  .site-header__drawer .site-header__nav-link {
+    display: block;
+    padding: 15px 20px !important;
+    font-size: var(--xd-fs-lead, 16px);
+    letter-spacing: 0.04em;
+    color: #fff;
+    border-bottom: 1px solid rgb(255 255 255 / 8%);
+  }
+
+  .site-header__drawer .site-header__nav-link.active {
+    color: #d50032 !important;
+  }
+
+  /* Pushed to the bottom of the drawer: secondary, but not lost. */
+  .site-header__drawer-foot {
+    display: grid;
+    margin-top: auto;
+    padding: 24px 20px 0;
+    gap: 12px;
+    justify-items: start;
+  }
+
+  .site-header__drawer-account,
+  .site-header__drawer-support {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    font-size: var(--xd-fs-small, 13px);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: rgb(255 255 255 / 75%);
+  }
+
+  .site-header__drawer-account {
+    font-family: "Space Grotesk", sans-serif;
+    text-transform: uppercase;
+    color: #fff;
+  }
+}
+
+/* ==========================================================================
+   1b. Touch devices - reveal-on-hover affordances
+
+   Keyed on input capability, not width: an iPad at 900px is a touch device
+   with no hover, so a width-only rule would leave BUY NOW unreachable there.
+   The width clause is kept so a narrow desktop window gets the same layout as
+   the phone design it is rendering.
+   ========================================================================== */
+
+@media (hover: none), (max-width: 767.98px) {
+  .product-card .product-card-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /*
+    Put the CTA in normal flow, and `order` moves it below the price: in
+    source order it is the first child, so without this it would sit above the
+    product name.
+  */
+  .product-card .product-card-content .product-card-btn,
+  .product-card:hover .product-card-content .product-card-btn,
+  .trending-card-style:hover .product-card-btn {
+    /*
+      `relative`, not `static`: still in normal flow, but able to take a
+      z-index so it stays above the full-card link overlay.
+
+      `left`/`bottom` MUST be reset alongside it. The desktop hover-reveal sets
+      `left: 50%; bottom: 100%`, which `static` silently ignored - switching to
+      `relative` made them apply again and shoved the button half a card to the
+      right, which measured as 84px of horizontal page overflow.
+    */
+    position: relative;
+    left: auto;
+    bottom: auto;
+    z-index: 2;
+    width: 100%;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 4px 6px 4px 16px;
+    opacity: 1;
+    visibility: visible;
+    transform: none !important;
+  }
+
+  /*
+    The chain that makes the line-up work: grid cell and slide stretch, card
+    fills the cell, content fills the card, CTA takes the slack.
+  */
+  .xd-product-grid > [class*='col-'] {
+    display: flex;
+  }
+
+  /*
+    `height: auto` lets the slide stretch to the tallest in the track (Swiper
+    pins slides to `height: 100%` otherwise), and `display: flex` makes the
+    card stretch to fill the slide. Both halves are needed: without the second
+    the slides matched but the cards inside them did not, so the CTAs still
+    sat at different heights.
+  */
+  .trending-slider .swiper-slide {
+    display: flex;
+    height: auto;
+  }
+
+  .product-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .product-card .product-card-content {
+    flex: 1 1 auto;
+  }
+
+  .product-card .product-card-price {
+    margin-bottom: 12px;
+  }
+
+  .product-card .product-card-form {
+    position: relative;
+    z-index: 2;
+  }
+
+  /*
+    The CTA is either a bare <a> (multi-variant, links to the PDP) or a
+    <button> wrapped in <product-form><form> (single variant, adds to cart).
+    Only the DIRECT child of the flex column can be re-ordered or pushed to the
+    bottom, so the rule has to target whichever of the two that is - putting it
+    on the button worked until the form wrapper appeared between them, which
+    left the CTA stranded at the top of the card with 110px of dead space
+    underneath.
+
+    `margin-top: auto` is what lines the CTAs up across a row regardless of how
+    many lines each product title runs to; the gap above it comes from the
+    price's own margin.
+  */
+  .product-card .product-card-content > .product-card-form,
+  .product-card .product-card-content > .product-card-btn {
+    order: 10;
+    width: 100%;
+    margin-top: auto;
+  }
+
+  .product-card .product-card-btn .btn-icon {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* ==========================================================================
+   2. <= 991.98px - sections built on .col-lg-* have stacked
+   ========================================================================== */
+
+@media (max-width: 991.98px) {
+  /* iOS zooms the whole viewport when a focused input is under 16px. Applies
+     from here down because iPads hit it too. */
+  input[type='text'],
+  input[type='email'],
+  input[type='search'],
+  input[type='tel'],
+  input[type='password'],
+  input[type='number'],
+  select,
+  textarea,
+  .form-control,
+  .form-select {
+    font-size: 16px;
+  }
+
+  /*
+    The hero copy column is .col-lg-4, so from here down it spans the full
+    width and no longer sits over the photo's dark side. The scrim carries the
+    contrast instead; it is weighted to the bottom, where the copy sits.
+  */
+  .hero_banner__scrim {
+    background: linear-gradient(
+      180deg,
+      rgb(0 0 0 / 58%) 0%,
+      rgb(0 0 0 / 16%) 28%,
+      rgb(0 0 0 / 30%) 52%,
+      rgb(0 0 0 / 88%) 100%
+    );
+  }
+
+  /* Against the scrim the design's 32%-black outline is invisible. */
+  .hero_banner--btn.btn-outline-accent {
+    border-color: rgb(255 255 255 / 38%);
+  }
+
+  /*
+    `.offset-2` in the set-builder markup is not breakpoint-scoped, so it adds
+    16.67% of left margin at every width. Once the columns stack that pushes
+    the image column off-screen - this was the source of the page's horizontal
+    scroll on both tablet and phone.
+  */
+  .pickleball-card .offset-2 {
+    margin-left: 0 !important;
+  }
+
+  .pickleball-card__media {
+    justify-content: center !important;
+    padding: 24px 0 0 !important;
+  }
+
+  /*
+    Stacked order: product shot, then the three feature rows, then the stats.
+    The image is the section's hook and on desktop it is the visual centre;
+    leading with the feature list would open the block on body copy.
+  */
+  .why-shop-col--media {
+    order: 1;
+  }
+
+  .why-shop-col--features {
+    order: 2;
+  }
+
+  .why-shop-col--stats {
+    order: 3;
+  }
+
+  .why-shop-image {
+    margin-top: -40px;
+    text-align: center;
+  }
+
+  /*
+    Stat rows. A fixed max-width on the description is a desktop measurement;
+    at phone width it forced "X-Degree" to break at its hyphen. Let the
+    description take whatever the number leaves instead.
+  */
+  .why-shop-right-disc {
+    max-width: none;
+    flex: 1 1 auto;
+    padding-left: 14px;
+  }
+
+  .why-shop-right-number {
+    flex: 0 0 auto;
+  }
+
+  .why-shop-left {
+    padding: 8px 24px 0;
+  }
+
+  .why-shop-right-counter {
+    padding: 0 24px 8px !important;
+  }
+
+  .why-shop-col--stats .why-shop-left-item {
+    padding: 16px 0;
+  }
+
+  /* Otherwise the last stat draws a rule against the card's bottom edge. */
+  .why-shop-col--stats .why-shop-left-item:last-child {
+    border-bottom: 0;
+  }
+
+  /*
+    Bootstrap's g-5 gutter puts -24px margins on the row, and `.custom-width`
+    replaces the container's max-width with a plain 1320px cap - so below about
+    1344px the container runs edge to edge with 12px of padding and the row
+    hangs 12px past the viewport on each side. That is a horizontal scrollbar
+    on the About page's story row and on the footer.
+
+    Measured at 768px: page 768, document 792.
+
+    Capped here rather than at 768 because the overflow starts the moment the
+    container stops being narrower than the screen, which is well above the
+    phone breakpoint. It is left alone from 992px up: the same 24px is still
+    there between 992 and ~1344, but unwinding it that far would change the
+    column gutters of a desktop layout that is signed off.
+  */
+  .container .row.g-5,
+  .footer .row.g-5 {
+    --bs-gutter-x: 1.5rem;
+    --bs-gutter-y: 2rem;
+  }
+}
+
+/* ==========================================================================
+   3. <= 767.98px - the mobile design
+   ========================================================================== */
+
+@media (max-width: 767.98px) {
+  /*
+    TYPE SCALE
+
+    The design shipped with 25 distinct font sizes below 768px - 10, 10.5, 11,
+    11.5, 12, 13, 13.5, 14, 15, 16, 17, 18, 19, 22, 24, 25, 26, 27, 28, 32, 34,
+    38, 40, 46. Sizes that close together do not read as hierarchy, they read
+    as noise: nothing looks deliberate because nothing is clearly a step.
+
+    These 11 steps replace all of them. Every font-size below references a
+    token - if you need a new size, change a token rather than adding a step,
+    or the drift starts again.
+  */
+  :root {
+    /* 56, not 48: with the type scale tightened the sections were butting
+       into each other. Vertical silence between blocks is what stops a long
+       page reading as one undifferentiated wall. */
+    --xd-m-section-y: 56px;
+    --xd-m-gutter: 16px;
+
+    --xd-fs-eyebrow: 11px;  /* uppercase tracked labels */
+    --xd-fs-micro: 12px;    /* fine print */
+    --xd-fs-caption: 13px;  /* supporting notes */
+    --xd-fs-small: 14px;    /* secondary body */
+    --xd-fs-body: 15px;     /* body copy */
+    --xd-fs-lead: 17px;     /* product titles, prices, nav */
+    --xd-fs-h5: 21px;       /* card headings */
+    --xd-fs-h4: 25px;       /* panel headings */
+    --xd-fs-h3: 32px;       /* section headings */
+    --xd-fs-stat: 38px;     /* stat numerals */
+    --xd-fs-display: 42px;  /* hero */
+
+    /*
+      SPACING SCALE
+
+      Same problem the font sizes had: gaps had drifted to 0, 4, 8, 12, 16, 20,
+      23, 24 with no system behind them, so nothing looked deliberate. Four
+      steps, each with a job:
+
+        sp-1  within a tight group   (label -> value, title -> tagline)
+        sp-2  related elements       (image -> its thumbnails)
+        sp-3  between elements       (rule -> paragraph)
+        sp-4  between groups         (options -> buy row, gallery -> info)
+    */
+    --xd-sp-0: 4px;
+    --xd-sp-1: 8px;
+    --xd-sp-2: 12px;
+    --xd-sp-3: 16px;
+    --xd-sp-4: 24px;
+    --xd-sp-5: 32px;
+  }
+
+  /*
+    Safety net only - every known overflow is fixed at source below. `clip`
+    rather than `hidden` because `overflow-x: hidden` on the root turns it into
+    a scroll container, which would silently kill the sticky header.
+  */
+  html {
+    overflow-x: clip;
+  }
+
+  /* 12px of page gutter is too tight to read against; 16px is the floor. */
+  .container,
+  .container-fluid {
+    --bs-gutter-x: 2rem;
+  }
+
+  /* ---------- Vertical rhythm ---------- */
+  .section-tb-padding96 {
+    padding-top: var(--xd-m-section-y);
+    padding-bottom: var(--xd-m-section-y);
+  }
+
+  .section-t-padding96 {
+    padding-top: var(--xd-m-section-y);
+  }
+
+  /* ---------- Type scale ---------- */
+  .all-heading {
+    font-size: var(--xd-fs-h3);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+
+  .sub-heading {
+    font-size: var(--xd-fs-eyebrow);
+    letter-spacing: 0.18em;
+  }
+
+  .section-heading.mb-5 {
+    margin-bottom: var(--xd-sp-5) !important;
+  }
+
+  /* ---------- Header ---------- */
+  /*
+    Sticky. Cart and menu stay reachable through a long scroll, which is the
+    single highest-value header change on a phone. The header group holds only
+    xd-header, so the promo bar travels with it - it is compressed to ~24px
+    below to keep the pinned block short.
+
+    z-index sits under the cart drawer's 1000 so the drawer still covers it.
+  */
+  .shopify-section-group-header-group {
+    position: sticky;
+    top: 0;
+    z-index: 90;
+  }
+
+  .top-bar {
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+  }
+
+  /* The support link is re-surfaced in the drawer footer instead. */
+  .top-bar__support {
+    display: none;
+  }
+
+  .top-bar__message {
+    font-size: var(--xd-fs-eyebrow);
+    letter-spacing: 0.06em;
+    line-height: 1.4;
+  }
+
+  .site-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgb(35 31 32 / 8%);
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+
+  /*
+    burger | logo | cart+account. Giving the two outer items `flex: 1 1 0`
+    makes them equal width, so the logo lands on the true centre rather than
+    being nudged by whichever side is wider.
+  */
+  .site-header__navbar {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .site-header__toggler {
+    order: 1;
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .site-header__brand {
+    order: 2;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0;
+  }
+
+  .site-header__logo {
+    width: 128px;
+  }
+
+  .site-header__ecommoption {
+    order: 3;
+    flex: 1 1 0;
+    justify-content: flex-end;
+    /* 24px keeps the two 40px pseudo tap targets from overlapping. */
+    gap: 24px !important;
+    margin: 0 !important;
+  }
+
+  /*
+    The cart badge is absolutely positioned against .site-header__cart with
+    `top: -6px`. Giving that anchor a 44px tap target made the anchor 44px
+    TALL, so -6px was measured from the top of the tap target - roughly 13px
+    above the glyph - and the badge floated off on its own near the promo bar.
+
+    Let the anchor hug the icon so the badge lands on the glyph's corner, and
+    carry the tap target on a pseudo-element instead.
+  */
+  .site-header__option {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .site-header__option::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+
+  /* ---------- Hero ---------- */
+  /*
+    Height is set here rather than left to the copy. `svh` measures the
+    viewport with the browser chrome showing, so the second CTA cannot end up
+    under the URL bar on first paint. min() keeps it sane on tall phones, and
+    there is no max-height: if the copy ever grows past the box the section
+    should grow with it, not clip it.
+  */
+  /*
+    78svh, not 86: the sticky header takes ~75px on top, so at 86svh the hero
+    ended exactly at the fold and nothing below it hinted that the page
+    continued. This leaves ~100px of the next section showing. `svh` measures
+    the viewport with browser chrome visible, so the second CTA cannot end up
+    under the URL bar on first paint. No max-height - if the copy ever outgrows
+    the box the section should grow with it rather than clip it.
+  */
+  .hero_banner {
+    display: flex;
+    align-items: flex-end;
+    min-height: 520px;
+    min-height: min(78svh, 660px);
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .hero_banner > .container {
+    width: 100%;
+    padding-top: 72px;
+    padding-bottom: 40px;
+  }
+
+  /*
+    No portrait crop uploaded: swap the landscape photo for the placeholder
+    rather than cover-cropping it to a fifth of its width. Delete nothing to
+    undo this - the moment a mobile image is set, xd-hero-banner.liquid stops
+    emitting the placeholder and drops this modifier class.
+  */
+  .hero_banner__media--needs-mobile-art .hero_banner__pic {
+    display: none;
+  }
+
+  .hero_banner__media--needs-mobile-art .hero_banner__placeholder {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background-color: #1b1b1b;
+  }
+
+  .hero_banner__placeholder-svg {
+    width: 100%;
+    height: 100%;
+    fill: rgb(255 255 255 / 14%);
+  }
+
+  /* The placeholder is far lighter than the photo it stands in for, so the
+     gradient alone will not hold the white copy. Flatten it darker. */
+  .hero_banner__media--needs-mobile-art + .hero_banner__scrim {
+    background: linear-gradient(180deg, rgb(0 0 0 / 55%) 0%, rgb(0 0 0 / 78%) 100%);
+  }
+
+  .hero-banner--sub-title {
+    font-size: var(--xd-fs-eyebrow);
+    letter-spacing: 0.2em;
+  }
+
+  .hero_banner--title {
+    font-size: var(--xd-fs-display);
+    line-height: 0.92;
+    margin-top: 14px;
+  }
+
+  /* The desktop line break lands mid-phrase once the measure is this narrow. */
+  .hero_banner--title br {
+    display: none;
+  }
+
+  .hero_banner--widget .text-white-80 {
+    font-size: var(--xd-fs-body);
+    line-height: 1.65;
+    max-width: 36ch;
+  }
+
+  .hero_banner--widget .mt-5 {
+    margin-top: 24px !important;
+  }
+
+  /* Two 256px buttons cannot share a phone row. Stacked, full width, in
+     priority order - the solid one is the one we want tapped. */
+  .hero_banner--widget .d-flex.gap-3 {
+    flex-direction: column;
+    gap: var(--xd-sp-2) !important;
+  }
+
+  .hero_banner--btn {
+    width: 100%;
+    min-width: 0;
+    height: 52px;
+  }
+
+  /* ---------- Section headings (eyebrow / heading + CTA / note) ----------
+     The row is two Bootstrap columns whose leaves need to interleave, so the
+     wrappers are collapsed with `display: contents` and the four leaves are
+     placed directly on a 2x3 grid. This keeps one CTA in the DOM rather than
+     shipping a duplicate mobile copy. */
+  .xd-section-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 12px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: var(--xd-sp-5) !important;
+  }
+
+  .xd-section-head > [class*='col-'],
+  .xd-section-head__titles,
+  .xd-section-head__aside-inner {
+    display: contents !important;
+  }
+
+  .xd-section-head .sub-heading {
+    grid-area: 1 / 1 / 2 / -1;
+  }
+
+  .xd-section-head .all-heading {
+    grid-area: 2 / 1 / 3 / 2;
+    font-size: var(--xd-fs-h3);
+    margin-top: 2px;
+  }
+
+  .xd-section-head__cta {
+    grid-area: 2 / 2 / 3 / 3;
+    justify-self: end;
+    align-self: center;
+    min-width: 0;
+    gap: 8px;
+    padding: 4px 6px 4px 16px;
+    white-space: nowrap;
+  }
+
+  .xd-section-head__cta .btn-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .xd-section-head__note {
+    grid-area: 3 / 1 / 4 / -1;
+    margin-top: 12px !important;
+    font-size: var(--xd-fs-caption);
+    line-height: 1.65;
+    text-align: left !important;
+  }
+
+  /*
+    The arrow disc is 40px in the desktop design, sized against a 56px button
+    on a wide layout. At phone width, inside a 52px button, it reads as a
+    button stuck to a button. 32px keeps the same proportion the desktop has.
+  */
+  .btn-primary .btn-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .btn-icon img {
+    width: 12px;
+    height: auto;
+  }
+
+  /* ---------- Product cards ---------- */
+  .xd-product-grid {
+    --bs-gutter-y: 32px;
+  }
+
+  .product-card-image {
+    padding: 14px;
+  }
+
+  /* A 2-up grid only reads as a grid if the tiles line up, and product photos
+     do not all share an aspect ratio. Pin the tile, fit the photo inside it. */
+  .product-card-image img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+  }
+
+  .trending-card-style .product-card-image img {
+    object-fit: cover;
+    aspect-ratio: 3 / 4;
+  }
+
+  .bestsellers-slider .product-card-image img {
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
+  .product-card .product-card-content {
+    padding: 12px 0 0;
+  }
+
+  .product-card-title {
+    line-height: 1.45;
+  }
+
+  /* ---------- Sliders ---------- */
+  .trending-slider .pagination,
+  .categories-slider .pagination {
+    margin-top: 24px !important;
+  }
+
+  /* ---------- Categories ---------- */
+  .categories-card-image img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+  }
+
+  .categories-card-content {
+    padding: 12px !important;
+  }
+
+  .categories-card-title {
+    font-size: var(--xd-fs-h5);
+  }
+
+  .categories-card-btn {
+    padding: 3px 16px;
+  }
+
+  /* ---------- Set builder ----------
+     Reordered, not just restacked. On desktop the paddles sit at the bottom
+     of the card because the card bleeds off the section floor. Stacked on a
+     phone that buried the product below a wall of copy - the most persuasive
+     thing in the section was the last thing you reached. Image leads, then
+     the pitch, then a price/CTA block closed off by a hairline. */
+  .xd-set-builder {
+    background-image: var(--xd-bg-mobile, var(--xd-bg));
+    background-position: center;
+    /* The card no longer bleeds off the bottom edge, so the section closes. */
+    padding-bottom: var(--xd-m-section-y);
+  }
+
+  .pickleball-card {
+    /*
+      Zero the row's negative gutters. They pulled the card 12px wider than the
+      container on each side, so its edges sat at x=4 while the section heading
+      above sat at x=16 and nothing lined up.
+    */
+    margin-left: 0;
+    margin-right: 0;
+
+    /* 8px here + Bootstrap's 12px column gutter = a 20px content inset. */
+    padding: 22px 8px 0;
+
+    /*
+      The markup carries Bootstrap's `.pb-0` for the desktop layout, where the
+      product image bleeds off the bottom of the section. That utility is
+      `padding-bottom: 0 !important`, so it was silently eating the card's
+      bottom padding here and leaving the CTA flush against the card edge -
+      measured: card bottom and button bottom both at y=798. On mobile the CTA
+      is the last thing in the card and needs real space under it, and only
+      !important can outrank the utility.
+    */
+    padding-bottom: 28px !important;
+
+    border-radius: 20px;
+
+    /*
+      Contains the media glow below, which is deliberately wider than its
+      column: without this it reached 9px past the viewport and was only being
+      swallowed by the `overflow-x: clip` safety net on <html>. Clipping it to
+      the card is also the look we want - the wash runs out to the card edge
+      and stops on the radius.
+    */
+    overflow: hidden;
+  }
+
+  .pickleball-card .px-5 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .pickleball-card__media {
+    order: -1;
+    position: relative;
+    justify-content: center !important;
+    /* The card supplies the space above; this only separates image from copy. */
+    padding: 0 0 22px !important;
+  }
+
+  /* Keeps the cutout from floating in flat black. */
+  .pickleball-card__media::before {
+    content: '';
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    width: 118%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgb(213 0 50 / 20%) 0%, rgb(213 0 50 / 0%) 62%);
+    pointer-events: none;
+  }
+
+  .pickleball-card__media img {
+    position: relative;
+    max-width: 100%;
+  }
+
+  .pickleball-card--widget--title {
+    font-size: var(--xd-fs-h4);
+    line-height: 1.15;
+  }
+
+  .pickleball-card__sub {
+    font-size: var(--xd-fs-caption) !important;
+    letter-spacing: 0.04em;
+    line-height: 1.65;
+    color: rgb(255 255 255 / 70%) !important;
+  }
+
+  /* Reads as a spec list rather than loose bullet text. */
+  /*
+    Feature points become one endlessly looping row. Four stacked rows with
+    hairlines cost ~130px of section height for information that reads just as
+    well moving past. The track holds two identical copies of the list and
+    translates exactly -50%, so the moment copy 2 reaches the start position the
+    animation restarts on an identical frame - no visible jump.
+  */
+  .pickleball-card-marquee {
+    position: relative;
+    margin: var(--xd-sp-3) -8px;
+    padding: 10px 0;
+    overflow: hidden;
+    border-top: 1px solid rgb(255 255 255 / 10%);
+    border-bottom: 1px solid rgb(255 255 255 / 10%);
+  }
+
+  /* Softens both ends so items enter and leave rather than being chopped. */
+  .pickleball-card-marquee::before,
+  .pickleball-card-marquee::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 28px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .pickleball-card-marquee::before {
+    left: 0;
+    background: linear-gradient(90deg, #000 0%, rgb(0 0 0 / 0%) 100%);
+  }
+
+  .pickleball-card-marquee::after {
+    right: 0;
+    background: linear-gradient(270deg, #000 0%, rgb(0 0 0 / 0%) 100%);
+  }
+
+  .pickleball-card-list {
+    display: flex;
+    width: max-content;
+    margin: 0 !important;
+    border-top: 0;
+    animation: xd-marquee 26s linear infinite;
+  }
+
+  .pickleball-card-list__clone {
+    display: block;
+  }
+
+  .pickleball-card-list li {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0 22px 0 26px;
+    font-size: var(--xd-fs-small);
+    line-height: 1.5;
+    white-space: nowrap;
+    color: rgb(255 255 255 / 82%);
+    border-bottom: 0;
+  }
+
+  .pickleball-card-list li::after {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  /* --- the panel reads as one centred column --- */
+  .pickleball-card--widget {
+    text-align: center;
+  }
+
+  .pickleball-card__pricing {
+    justify-content: center;
+  }
+
+  /* One row, with a real space between the words - see the base rule above. */
+  .pickleball-card__price-label span {
+    display: inline;
+  }
+
+  /*
+    Label and price share one row, as they do on desktop. The <br> in the
+    price_label setting stays: hiding it ran the words together
+    ("STARTINGFROM") because there is no whitespace either side of the tag,
+    and there is no reliable CSS way to put a space back where a <br> was. So
+    the label sits as two short tracked lines beside the numeral, baseline-
+    balanced against it.
+  */
+  .pickleball-card__pricing {
+    align-items: center !important;
+    gap: var(--xd-sp-2) !important;
+    margin-bottom: var(--xd-sp-4) !important;
+  }
+
+  .pickleball-card__price-label {
+    font-size: var(--xd-fs-eyebrow) !important;
+    letter-spacing: 0.12em;
+    line-height: 1.35;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 55%) !important;
+  }
+
+  .pickleball-card--price {
+    font-size: var(--xd-fs-h4) !important;
+    line-height: 1.1;
+  }
+
+  .pickleball-card__cta {
+    width: 100%;
+    height: 52px;
+  }
+
+  /* ---------- Why shop ----------
+     The section was three stacked walls of text. Two changes carry the load:
+
+     1. The three feature blocks become a horizontal, snapping, auto-advancing
+        carousel. Native scroll-snap rather than another Swiper instance - it
+        needs no DOM restructuring, so desktop keeps its vertical list, and it
+        stays swipeable if JS never runs. xd-mobile-ui.js only adds the dots
+        and the auto-advance on top.
+
+     2. The stats become tiles in a 2 + 1 grid, numeral first. Set as full
+        width rows they read as three more lines of prose; as tiles the
+        numerals carry the block and the copy supports them. */
+  .why-shop-section {
+    background-image: var(--xd-bg-mobile, var(--xd-bg));
+    background-position: center;
+  }
+
+  /* Clearance for the media, which is pulled up over the card's top edge. */
+  .why-shop-section .section-heading.mb-5.pb-5 {
+    margin-bottom: var(--xd-m-section-y) !important;
+    padding-bottom: 0 !important;
+  }
+
+  .why-shop-widget-wrap {
+    padding: 0 10px 12px;
+  }
+
+  .why-shop-widget-wrap:after {
+    height: 16%;
+    border-radius: 10px 10px 20px 20px;
+  }
+
+  .why-shop-widget {
+    border-radius: 20px;
+    /*
+      Visible, not hidden: the shot is meant to break the card's top edge, the
+      same move the desktop layout makes with margin-top: -85px. Clipping it
+      here was what sliced the top of the player's cap.
+    */
+    overflow: visible;
+  }
+
+  .why-shop-col--media {
+    margin-top: -36px;
+  }
+
+  .why-shop-image {
+    position: relative;
+    margin: 0;
+    /* The photo keeps its own soft corners now the card no longer clips it. */
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .why-shop-image img {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    /* No forced ratio and no cover: the whole frame is shown, so nothing is
+       cropped regardless of what the merchant uploads. */
+    aspect-ratio: auto;
+    object-fit: contain;
+  }
+
+  /*
+    A deeper fade, and the space it occupies is handed back. The bottom ~58% of
+    the shot dissolves into the card, and the negative margin below pulls the
+    features up into that dissolved region - so the section loses about 50px of
+    height without the photo itself being cropped.
+  */
+  .why-shop-image::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 -1px 0;
+    height: 58%;
+    background: linear-gradient(
+      180deg,
+      rgb(0 0 0 / 0%) 0%,
+      rgb(0 0 0 / 55%) 42%,
+      #000 88%
+    );
+    pointer-events: none;
+  }
+
+  .why-shop-col--media {
+    margin-bottom: -68px;
+  }
+
+  /* --- features: snapping carousel --- */
+  .why-shop-col--features .why-shop-left {
+    position: relative; /* offsetParent for the autoplay maths */
+    display: flex;
+    gap: var(--xd-sp-2);
+    /* Matches the 18px inset of .why-shop-right-counter below. */
+    padding: 18px 18px 2px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .why-shop-col--features .why-shop-left::-webkit-scrollbar {
+    display: none;
+  }
+
+  .why-shop-col--features .why-shop-left-item {
+    flex: 0 0 84%;
+    flex-direction: column;
+    scroll-snap-align: center;
+    gap: 12px !important;
+    margin: 0;
+    padding: 18px 16px !important;
+    background-color: rgb(255 255 255 / 4%);
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: 14px;
+  }
+
+  .why-shop-col--features .why-shop-left-item .icon {
+    width: 42px;
+    flex: 0 0 auto;
+  }
+
+  .why-shop-col--features .why-shop-left-item .content {
+    width: 100%;
+  }
+
+  .why-shop-left-item-title {
+    font-size: var(--xd-fs-lead);
+    line-height: 1.25;
+  }
+
+  .why-shop-left-item--disc {
+    font-size: var(--xd-fs-small);
+    line-height: 1.65;
+  }
+
+  .why-shop-features-dots {
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    padding: 14px 0 2px;
+  }
+
+  .why-shop-features-dot {
+    width: 22px;
+    height: 3px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background-color: rgb(255 255 255 / 22%);
+    transition: background-color 0.25s ease, width 0.25s ease;
+  }
+
+  .why-shop-features-dot.is-active {
+    width: 32px;
+    background-color: #d50032;
+  }
+
+  /* --- stats: 2 + 1 tiles --- */
+  .why-shop-col--stats .why-shop-right-counter {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--xd-sp-2);
+    padding: 18px 18px 18px !important;
+  }
+
+  /* Beats the .d-flex utility in the markup. */
+  .why-shop-col--stats .why-shop-left-item {
+    display: block !important;
+    padding: 14px 14px 16px;
+    background-color: rgb(255 255 255 / 4%);
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: 14px;
+  }
+
+  /*
+    Odd one out spans the full width rather than leaving a hole. The border is
+    restated because the <=991.98px block strips it from the last row - correct
+    when these are stacked rows, wrong now they are bordered tiles.
+  */
+  .why-shop-col--stats .why-shop-left-item:last-child {
+    grid-column: 1 / -1;
+    border-bottom: 1px solid rgb(255 255 255 / 10%);
+  }
+
+  .why-shop-right-number {
+    font-size: var(--xd-fs-stat);
+    line-height: 1;
+    color: #fff;
+  }
+
+  .why-shop-right-disc {
+    max-width: none;
+    margin-top: 8px;
+    padding-left: 0;
+    font-size: var(--xd-fs-micro);
+    line-height: 1.55;
+    text-align: left !important;
+  }
+
+  /* ---------- Trusted logos ---------- */
+  /* The section slides up under the why-shop block's red base; both offsets
+     have to shrink together or the logos collide with the card above. */
+  .product-trusted {
+    padding: 76px 0 32px;
+    margin-top: -56px;
+  }
+
+  .product-trusted .fs20 {
+    font-size: var(--xd-fs-body);
+    letter-spacing: 0.06em;
+  }
+
+  .product-trusted__grid {
+    --bs-gutter-y: 14px;
+  }
+
+  .sm-logo {
+    padding: 12px 8px;
+  }
+
+  .sm-logo img {
+    height: 28px;
+  }
+
+  /* ---------- Trust bar ---------- */
+  /* Markup is .text-center.text-md-start, so below 768px the copy centres
+     while its icon stays left - which reads as misaligned. Keep it left. */
+  .trust-bar .row {
+    text-align: left !important;
+    --bs-gutter-y: 22px;
+  }
+
+  .trust-bar {
+    padding: 24px 0;
+  }
+
+  /*
+    Full-width rows, not a 2x2 grid. Two columns leave each item ~120px of
+    text, which pushed every label onto two lines and every description onto
+    four. One column is the same total height and actually readable.
+  */
+  .trust-bar .col-6 {
+    width: 100%;
+    gap: 12px !important;
+  }
+
+  .trust-bar img {
+    width: 40px;
+    flex: 0 0 40px;
+  }
+
+  .trust-bar__label {
+    font-size: var(--xd-fs-small);
+    line-height: 1.4;
+  }
+
+  .trust-bar__desc {
+    font-size: var(--xd-fs-micro);
+    line-height: 1.5;
+    margin-top: var(--xd-sp-0);
+  }
+
+  /* ---------- Footer ---------- */
+  .footer.section-t-padding96 {
+    padding-top: var(--xd-m-section-y);
+  }
+
+  .footer__logo img {
+    max-width: 200px;
+  }
+
+  .footer__newsletter-heading {
+    margin-top: 28px;
+  }
+
+  /*
+    Self-adjusting rather than breakpoint-driven. The input's 200px flex-basis
+    is the narrowest an email field should ever get; while the button still
+    fits beside it they share a row, and the moment it does not the button
+    wraps and fills the next line on its own. That holds for any viewport and
+    for any button label the merchant types, which a fixed breakpoint does not.
+  */
+  .footer__newsletter-row {
+    flex-wrap: wrap;
+  }
+
+  .footer__newsletter-input {
+    flex: 1 1 200px;
+    min-width: 0;
+    padding: 13px 14px;
+  }
+
+  .footer__newsletter-btn {
+    flex: 1 1 auto;
+    width: auto;
+    max-width: none;
+    min-height: 48px;
+    padding: 0 18px;
+    white-space: nowrap;
+  }
+
+  .footer__nav-grid {
+    --bs-gutter-y: 28px;
+  }
+
+  .footer__nav-heading {
+    font-size: var(--xd-fs-body);
+    margin-bottom: 14px;
+  }
+
+  .footer__nav-list li {
+    margin-bottom: 13px;
+  }
+
+  .footer__divider {
+    margin-top: 28px;
+  }
+
+  .footer__bottom {
+    padding: 16px 0;
+  }
+
+  .footer__legal-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 16px;
+  }
+
+  .footer-content__social {
+    flex-wrap: wrap;
+  }
+}
+
+/* ==========================================================================
+   4. <= 479.98px - small phones
+   ========================================================================== */
+
+@media (max-width: 479.98px) {
+  /*
+    Only the display steps come down. Body, small and micro hold their size -
+    shrinking body copy on a smaller phone makes it harder to read at exactly
+    the moment it is hardest to read.
+  */
+  :root {
+    --xd-m-section-y: 46px;
+    --xd-fs-h5: 19px;
+    --xd-fs-h4: 22px;
+    --xd-fs-h3: 27px;
+    --xd-fs-stat: 32px;
+    --xd-fs-display: 36px;
+  }
+
+  .product-trusted {
+    padding: 64px 0 24px;
+    margin-top: -48px;
+  }
+
+  .trust-bar img {
+    width: 34px;
+    flex: 0 0 34px;
+  }
+
+  .footer__logo img {
+    max-width: 180px;
+  }
+
+  .footer__copyright-strip {
+    gap: 10px;
+  }
+}
+
+/* ==========================================================================
+   5. Content templates - about, blog, article, FAQ, register, collection
+
+   Given the same treatment as the home and product pages: the type scale from
+   section 3, section padding on --xd-m-section-y, nothing that relies on
+   hover, and no row of content narrower than it needs to be.
+
+   Most of it is shared. Five components build every one of these pages -
+   inner banner, long-form rich text, accordion, card grid, form - so those are
+   styled once by component, and the per-page blocks carry only what is
+   genuinely particular to a page.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   5a. <= 991.98px - the collection filter sidebar becomes a drawer
+
+   Keyed to 992 rather than 768 because .col-lg-3 is what stops holding the
+   sidebar beside the grid. Below that it stacks - and it ships expanded
+   (`.collapse.show`, which is what the desktop column wants), so eight filter
+   groups put the best part of two screenfuls of controls between the reader
+   and the first product. On a tablet as much as on a phone.
+
+   The panel markup is in xd-collection-grid.liquid; it stays inside the facet
+   form, because Bootstrap only fixes its position, it never moves it.
+
+   Tokens from section 3 are declared at 767.98px, so everything here carries
+   its own fallback.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 991.98px) {
+  .xd-filter-panel.offcanvas-lg {
+    --bs-offcanvas-width: min(88vw, 380px);
+    background-color: #fff;
+  }
+
+  .xd-filter-panel .offcanvas-header {
+    align-items: center;
+    padding: 10px 12px 10px 20px;
+    border-bottom: 1px solid rgb(35 31 32 / 10%);
+  }
+
+  .xd-filter-panel__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #382b2a;
+  }
+
+  .xd-filter-panel .offcanvas-header .btn-close {
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    background-size: 13px 13px;
+    border-radius: 50%;
+  }
+
+  /*
+    The panel is a flex column, so the group list takes the slack and scrolls
+    while the footer stays put. A `position: sticky` footer would sit on top of
+    the last filter row instead of reserving space for itself.
+  */
+  .xd-filter-panel .filter-box {
+    flex: 1 1 auto;
+    padding: 4px 20px 8px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* The sidebar's own inset is the panel's padding now. */
+  .xd-filter-panel .filter-box .accordion-button {
+    padding: 15px 0;
+    font-size: 16px;
+  }
+
+  .xd-filter-panel .filter-box .accordion-item .accordion-body {
+    padding-right: 0;
+  }
+
+  /*
+    Filter rows become tap targets. 3px of padding on a 14px label is a 20px
+    row - fine to click, not fine to hit with a thumb.
+  */
+  .xd-filter-panel .filter-box .accordion-item .accordion-body ul li a.filter-link,
+  .xd-filter-panel .filter-box .form-check-label {
+    min-height: 40px;
+    padding: 8px 0;
+    line-height: 1.35;
+  }
+
+  .xd-filter-panel .filter-box .form-check {
+    align-items: center;
+    min-height: 40px;
+  }
+
+  .xd-filter-panel .filter-box .review-star {
+    min-height: 40px;
+    padding: 8px 0;
+    margin-bottom: 0 !important;
+  }
+
+  /* 32px chips with a 12px gap read as one strip under a thumb. */
+  .xd-filter-panel .filter-box .fbf-color__opt {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+  }
+
+  .xd-filter-panel .filter-box .accordion-body .d-flex.gap-3 {
+    gap: 14px !important;
+  }
+
+  .xd-filter-panel__foot {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 0 0 auto;
+    padding: 14px 20px;
+    /* Clears the home indicator on a notched phone. */
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    background-color: #fff;
+    border-top: 1px solid rgb(35 31 32 / 10%);
+  }
+
+  .xd-filter-panel__clear {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    color: rgb(35 31 32 / 62%);
+  }
+
+  .xd-filter-panel__apply {
+    flex: 1 1 auto;
+    min-height: 48px;
+    background-color: #d50032;
+    border-color: #d50032;
+    color: #fff;
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-radius: 50px;
+  }
+
+  /* ---------- The control that opens it ----------
+     Styled from the drawer's own breakpoint rather than 768, or a tablet gets
+     a bare UA button - `.filter-title` beside it is hidden from 992 down. It
+     is the one control on the page that has to be found immediately, so it is
+     the only solid thing on a white bar. */
+  .xd-filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 20px;
+    background-color: #231f20;
+    border: 0;
+    border-radius: 50px;
+    font-size: var(--xd-fs-eyebrow, 11px);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  .xd-filter-toggle img {
+    width: 16px;
+    height: 16px;
+    /* The icon ships in brand red, which on this button is a smudge. */
+    filter: brightness(0) invert(1);
+  }
+
+  .xd-filter-toggle__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background-color: #d50032;
+    border-radius: 10px;
+    font-size: 11px;
+    line-height: 1;
+  }
+
+  /* ---------- Sort ----------
+     A native <select>: no custom menu beats the platform's own picker on a
+     touch device. It just stops looking like a form field, and drops the
+     140px label box - which the desktop bar has room for and the drawer's
+     toolbar, sharing its row with the Filters button, does not. It was
+     wrapping "SORT BY" onto two lines and clipping the value beside it. */
+  .sort-box {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .sort-box label {
+    width: auto;
+    padding: 0;
+    font-size: var(--xd-fs-eyebrow, 11px);
+    letter-spacing: 0.12em;
+    color: rgb(56 43 42 / 55%);
+  }
+
+  /* 16px so iOS does not zoom the viewport when the picker opens. */
+  .sort-box .form-select {
+    width: auto;
+    max-width: 52vw;
+    height: 44px;
+    padding: 0 28px 0 8px;
+    background-position: right 4px center;
+    background-color: transparent;
+    border: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #382b2a;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5b. <= 767.98px - the content pages
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 767.98px) {
+  /* ---------- Inner banner (about / blog / FAQ) ----------
+     340px of letterbox (240 on a tablet) is a lot of a phone screen to spend
+     on a photo with two words over it, so the banner is sized by its own copy
+     with a floor that keeps it reading as a banner.
+
+     The scrim is the other half of it. The crop is `background-position:
+     right`, which at this width can land anything at all under the heading,
+     and the sub text is body colour - dark on dark as often as not. */
+  .inner-banner {
+    position: relative;
+    height: auto;
+    min-height: 190px;
+    padding: 30px 0;
+    background-position: center;
+  }
+
+  .inner-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgb(0 0 0 / 24%) 0%, rgb(0 0 0 / 72%) 100%);
+  }
+
+  .inner-banner > .container {
+    position: relative;
+    z-index: 1;
+  }
+
+  .inner-banner-heading {
+    font-size: var(--xd-fs-h3);
+    letter-spacing: -0.01em;
+  }
+
+  .inner-banner-content p {
+    max-width: 38ch;
+    margin: 10px 0 0;
+    font-size: var(--xd-fs-caption);
+    line-height: 1.6;
+    color: rgb(255 255 255 / 78%);
+  }
+
+  /* ---------- Long-form copy ----------
+     Merchant-typed content - the About story, article bodies, policy pages -
+     arrives as bare <p>/<ul>/<h*> at the browser default: 16px, 1.5 line
+     height, 1em margins, which is a desktop measure on a phone column. One
+     rule covers every page on the site that carries prose. */
+  .xd-rte,
+  .xd-rte p,
+  .xd-rte li {
+    font-size: var(--xd-fs-body);
+    line-height: 1.75;
+  }
+
+  .xd-rte p,
+  .xd-rte ul,
+  .xd-rte ol {
+    margin: 0 0 var(--xd-sp-3);
+  }
+
+  .xd-rte li {
+    margin-bottom: var(--xd-sp-1);
+  }
+
+  .xd-rte h1,
+  .xd-rte h2,
+  .xd-rte h3,
+  .xd-rte h4,
+  .xd-rte h5 {
+    margin: var(--xd-sp-4) 0 var(--xd-sp-1);
+    font-size: var(--xd-fs-h5);
+    line-height: 1.3;
+  }
+
+  /* A trailing margin inside a padded card reads as uneven padding. */
+  .xd-rte > :last-child {
+    margin-bottom: 0;
+  }
+
+  /* ---------- FAQ accordion (about + FAQ page) ----------
+     Both variants of the section use it: the plain one on the FAQ page and
+     the one over a background image on About. */
+  .fbf-accordion .accordion-item {
+    margin-bottom: var(--xd-sp-1);
+  }
+
+  .fbf-accordion .accordion-button {
+    gap: var(--xd-sp-2);
+    padding: 14px 16px;
+    font-size: var(--xd-fs-body);
+    line-height: 1.4;
+    text-align: left;
+  }
+
+  /* Bootstrap's 20px chevron next to 15px text reads as the louder of the
+     two. It is also a flex item, so it needs to be told not to shrink. */
+  .fbf-accordion .accordion-button::after {
+    flex: 0 0 auto;
+    width: 14px;
+    height: 14px;
+    background-size: 14px;
+  }
+
+  /* Top padding is small on purpose: the open button above it is the same
+     crimson, so the two read as one panel and only the copy needs the inset. */
+  .fbf-accordion .accordion-body {
+    padding: 2px 16px 16px;
+    font-size: var(--xd-fs-small);
+    line-height: 1.7;
+  }
+
+  .fbf-accordion .accordion-body p {
+    margin: 0 0 10px;
+  }
+
+  .fbf-accordion .accordion-body p:last-child {
+    margin-bottom: 0;
+  }
+
+  .faqs-section {
+    background-position: center;
+  }
+
+  /* ---------- Trust bar ----------
+     The 24px in section 3 is right on the home page only, where the
+     trusted-logos block slides up over the bar on a negative margin and
+     supplies the space itself. Every page that closes on the bar needs it to
+     carry its own inset - the same step the product page takes. */
+  main[data-template='page'] .trust-bar,
+  main[data-template='blog'] .trust-bar,
+  main[data-template='article'] .trust-bar,
+  main[data-template='collection'] .trust-bar {
+    padding: var(--xd-sp-5) 0;
+  }
+
+  /* ---------- Pagination (blog + collection) ---------- */
+  .xd-pager {
+    flex-wrap: wrap;
+    margin-top: var(--xd-sp-5) !important;
+  }
+
+  .xd-pager__link {
+    min-width: 44px;
+    height: 44px;
+  }
+
+  /* ==================== About ==================== */
+
+  /* ---------- Story + mission ---------- */
+  .our-story-section .all-heading {
+    margin-top: var(--xd-sp-0);
+  }
+
+  .our-story-section .xd-rte {
+    margin-top: var(--xd-sp-3);
+  }
+
+  /* The mission card is the section's second voice, so it keeps its own
+     inset - just not a desktop one. */
+  .our-story-section .bg-black {
+    padding: var(--xd-sp-4) 20px !important;
+    border-radius: 16px !important;
+  }
+
+  .our-story-section .bg-black .fs40 {
+    margin-bottom: var(--xd-sp-2) !important;
+    font-size: var(--xd-fs-h4) !important;
+    line-height: 1.15;
+  }
+
+  .our-story-section .bg-black .fs14 {
+    font-size: var(--xd-fs-small);
+    line-height: 1.75;
+  }
+
+  /* ---------- Shop cards ---------- */
+  /* The heading row is the same eyebrow / heading / note / CTA shape as the
+     home page's, but built out of plain columns rather than .xd-section-head,
+     so it is placed by wrapping rather than by grid. */
+  .xd-shop-cards .row.mb-5 {
+    margin-bottom: var(--xd-sp-5) !important;
+  }
+
+  .xd-shop-cards .row.mb-5 > .col-md-4 {
+    margin-top: var(--xd-sp-2);
+  }
+
+  .xd-shop-cards .row.mb-5 .d-flex.gap-3 {
+    flex-wrap: wrap;
+    gap: var(--xd-sp-2) !important;
+  }
+
+  /* Right-aligned against a full-width column is right-aligned against
+     nothing; the copy reads from the same left edge as everything else. */
+  .xd-shop-cards .row.mb-5 p {
+    flex: 1 1 100%;
+    text-align: left !important;
+    font-size: var(--xd-fs-caption);
+    line-height: 1.65;
+  }
+
+  /*
+    The card row carries no `g-*` class, so --bs-gutter-y is 0 and stacked
+    cards touch - invisible on desktop, where the row never stacks.
+  */
+  .xd-shop-cards .row:not(.mb-5) {
+    --bs-gutter-y: var(--xd-sp-3);
+  }
+
+  /*
+    A fixed crop, because the overlay is positioned from the card's bottom
+    edge: at the image's own ratio a short photo puts the copy above the
+    frame. Two ratios, because the CTA variant's overlay is twice as tall -
+    title, a line of copy and a button - so it needs a taller card to sit in
+    without covering the subject of the photograph.
+  */
+  .xd-shop-cards .shop-card-image img {
+    width: 100%;
+    aspect-ratio: 16 / 11;
+    object-fit: cover;
+  }
+
+  .xd-shop-cards .shop-card--cta .shop-card-image img {
+    aspect-ratio: 1 / 1;
+  }
+
+  /* White copy sits directly on the photograph, so its legibility is
+     currently whatever the merchant uploaded. */
+  .xd-shop-cards .shop-card-image::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 62%;
+    background: linear-gradient(180deg, rgb(0 0 0 / 0%) 0%, rgb(0 0 0 / 74%) 76%, rgb(0 0 0 / 90%) 100%);
+    pointer-events: none;
+  }
+
+  /* Both the 200px cap and the `w-75` in the markup are fractions of a
+     desktop card. Here the overlay is the card, inset by one gutter. */
+  .xd-shop-cards .shop-card-content {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  .xd-shop-cards .shop-card-title {
+    width: auto !important;
+    padding-right: 0 !important;
+    font-size: var(--xd-fs-h5);
+    line-height: 1.15;
+  }
+
+  /* 48px of margin plus 24px of padding between the title and its button. */
+  .xd-shop-cards .shop-card-content .mb-5.pb-4 {
+    margin-bottom: var(--xd-sp-2) !important;
+    padding-bottom: 0 !important;
+  }
+
+  .xd-shop-cards .shop-card-content .product-card-btn {
+    width: 100%;
+    margin-bottom: 0 !important;
+    padding: 4px 6px 4px 16px;
+  }
+
+  .xd-shop-cards .shop-card-content .product-card-btn .btn-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* An 11px link is a label, not a target. */
+  .xd-shop-cards .shop-card-content > a:not(.btn) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: var(--xd-fs-eyebrow);
+    letter-spacing: 0.18em;
+  }
+
+  .xd-shop-cards .img-tag {
+    top: 16px;
+    left: 16px;
+  }
+
+  /* ==================== Blog ==================== */
+
+  .blog-listing .row.g-4 {
+    --bs-gutter-y: var(--xd-sp-5);
+  }
+
+  /* Article photos are whatever ratio the author uploaded. One crop is what
+     makes a column of cards read as a list rather than a pile. */
+  .blog-card--image img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+  }
+
+  .blog-card-title {
+    margin-top: var(--xd-sp-3);
+    margin-bottom: var(--xd-sp-1);
+    font-size: var(--xd-fs-h5);
+    line-height: 1.3;
+  }
+
+  /*
+    `.blog-card--content a` in main.css paints every link in the card as an
+    11px uppercase crimson label - which catches the title's link too, so the
+    headline renders at 11px. Restated here for the title only; the desktop
+    rule is left alone.
+  */
+  .blog-card-title a {
+    font-size: var(--xd-fs-h5);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    text-transform: none;
+    color: #231f20;
+  }
+
+  .blog-card--content p {
+    margin-bottom: var(--xd-sp-1);
+    font-size: var(--xd-fs-small);
+    line-height: 1.65;
+  }
+
+  /* Direct child only - the title's link is inside this container too. */
+  .blog-card--content > a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    font-size: var(--xd-fs-eyebrow);
+    letter-spacing: 0.16em;
+  }
+
+  .blog-card--content > a::after {
+    content: '\2192';
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  /* ==================== Article ==================== */
+
+  /* The card is the page here, so it takes the container's gutter as its own
+     margin rather than adding a second one inside it. */
+  .blog-list-section .row.g-3 {
+    --bs-gutter-x: 0;
+  }
+
+  .blog-full {
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  /* The image is flush with the card's top edge, so the card's radius is the
+     only one that should be visible - `rounded-3` inside it double-rounds. */
+  .blog__media img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: 0 !important;
+  }
+
+  /* px-4 (24px) inside a card that is itself inset 16px from the screen edge
+     costs 80px of a 390px column. */
+  .blog-card__meta-list {
+    justify-content: flex-start !important;
+    flex-wrap: wrap;
+    gap: var(--xd-sp-3) !important;
+    margin: var(--xd-sp-3) 0 !important;
+    padding: 0 18px !important;
+  }
+
+  .blog-card__meta-icon.fs18 {
+    font-size: var(--xd-fs-caption) !important;
+  }
+
+  .blog-card__meta .fs12 {
+    font-size: var(--xd-fs-micro);
+  }
+
+  .blog-card__body {
+    margin-top: 0 !important;
+    padding: 0 18px var(--xd-sp-4) !important;
+  }
+
+  /* h4, not h3: article titles run long, and 32px of a 25-word headline is
+     five lines before the reader reaches a word of the piece. */
+  .blog-card__body--title {
+    margin-bottom: var(--xd-sp-3) !important;
+    font-size: var(--xd-fs-h4);
+    line-height: 1.2;
+  }
+
+  /* ---------- Comments ---------- */
+  .blog-list-section .blog-full.p-4 {
+    margin-top: var(--xd-sp-3) !important;
+    padding: 20px 18px !important;
+  }
+
+  .blog-list-section .form-group.mb-3 {
+    margin-bottom: var(--xd-sp-2) !important;
+  }
+
+  /*
+    `.form-control` is 56px tall with a 40px radius - right for the single-line
+    fields it was written for, and it flattens the comment box to one line.
+  */
+  .blog-list-section textarea.form-control {
+    height: auto;
+    min-height: 120px;
+    padding: 14px 20px;
+    border-radius: 18px;
+    line-height: 1.6;
+  }
+
+  .blog-list-section form .btn.sm-btn {
+    width: 100%;
+    min-height: 48px;
+    margin-bottom: 0 !important;
+    padding: 4px 6px 4px 20px;
+  }
+
+  /* ==================== Register ==================== */
+
+  /*
+    On desktop the photo is a 55%-wide backdrop the form sits against. Left as
+    that, a phone gets a half-width strip of image behind a card - so the two
+    become what they actually are on a narrow screen: a picture, then a form.
+
+    The figure keeps its background-image (the <img> inside stays hidden, as on
+    desktop) and takes a ratio instead of a height, so any crop the merchant
+    uploads fills it.
+  */
+  .register-wrapper {
+    padding-bottom: var(--xd-m-section-y);
+  }
+
+  .register-container figure.register-image {
+    position: relative;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 10;
+    background-position: center;
+  }
+
+  .register-container .row > .col-md-5 {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Lifted over the photo's bottom edge: the card is the thing to be filled
+     in, and the overlap says the two belong to each other.
+
+     `position: relative` is what makes the overlap work rather than just
+     happen. The figure above is positioned and the card is not, so without
+     this the photo paints over it and eats the heading. */
+  .register-container .register-form {
+    position: relative;
+    z-index: 1;
+    min-height: 0;
+    margin-top: -36px;
+    padding: var(--xd-sp-4) 18px;
+    border-radius: 18px;
+    box-shadow: 0 18px 40px rgb(0 0 0 / 10%);
+  }
+
+  .register-container .register-form .fs30 {
+    margin-bottom: var(--xd-sp-4) !important;
+    font-size: var(--xd-fs-h4);
+    line-height: 1.25;
+  }
+
+  .register-form .form-group.mb-3 {
+    margin-bottom: var(--xd-sp-2) !important;
+  }
+
+  .register-form .form-control {
+    height: 52px;
+  }
+
+  .register-form .submit-btn {
+    min-height: 52px;
+    margin-bottom: 0 !important;
+    padding: 14px 0;
+  }
+
+  /* ==================== Collection ==================== */
+
+  /* ---------- Paddle-type tiles ---------- */
+  /*
+    A snapping strip, not a grid. Five tiles wrap to 2 + 2 + 1 and leave a hole
+    where the fifth should have a neighbour; as a strip they read as what they
+    are - a row of shortcuts - and the cut-off third tile is the only thing
+    that says there are more.
+
+    The row's own negative gutters are zeroed and replaced with padding: a
+    scroll container measures its content from the padding box, so negative
+    margins inside one put the first tile half off the left edge.
+  */
+  .all-product {
+    padding-top: var(--xd-sp-1) !important;
+    padding-bottom: var(--xd-sp-5) !important;
+  }
+
+  .all-product .text-center.mb-5 {
+    margin-bottom: var(--xd-sp-4) !important;
+  }
+
+  .all-product .row {
+    flex-wrap: nowrap;
+    margin: 0 calc(-1 * var(--xd-m-gutter));
+    /* The paddle is pulled 40px up out of its tile and would be clipped by the
+       scroll container; the padding is the room it needs. */
+    padding: 46px var(--xd-m-gutter) 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .all-product .row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .all-product .row > .col {
+    flex: 0 0 44%;
+    max-width: 44%;
+    scroll-snap-align: center;
+  }
+
+  /*
+    Each tile sizes its gradient panel to its own image, so paddle shots with
+    different natural heights left every title on a different baseline - which
+    a row of five side by side makes obvious. One height lines them up, and
+    caps a merchant's larger upload at the same time.
+  */
+  .all-product .paddles-card--image img {
+    width: auto;
+    max-width: 100%;
+    height: 200px;
+    object-fit: contain;
+  }
+
+  .all-product .paddles-card-title {
+    margin-top: var(--xd-sp-2);
+    font-size: var(--xd-fs-small);
+    letter-spacing: 0.02em;
+  }
+
+  /* ---------- Filter toolbar ---------- */
+  .xd-facet-bar {
+    margin-bottom: var(--xd-sp-4) !important;
+  }
+
+  .xd-facet-bar > .col-md-6 {
+    justify-content: space-between;
+    gap: var(--xd-sp-2) !important;
+    padding-bottom: var(--xd-sp-2);
+  }
+
+  /* ---------- Grid ---------- */
+  /* The cards are 2-up from the markup (col-6); this is the gutter. 16px
+     across, a full step down, so rows read as rows. */
+  .bestsellers-slider.row.g-4 {
+    --bs-gutter-x: 1rem;
+    --bs-gutter-y: var(--xd-sp-5);
+  }
+
+  /* An over-filtered collection is the one place a phone reader can end up
+     with nothing at all on screen. A bare line of grey text at the top-left
+     reads as a page that failed to load rather than as an answer. */
+  .bestsellers-slider > .col-12 > .filter-link {
+    margin: 0;
+    padding: var(--xd-sp-5) 0;
+    text-align: center;
+    font-size: var(--xd-fs-body);
+  }
+
+  /* ==================== Policy / generic page ==================== */
+
+  .privacy-policy-section {
+    margin-top: var(--xd-m-section-y) !important;
+    margin-bottom: var(--xd-m-section-y) !important;
+  }
+
+  .privacy-policy-section .bg-light {
+    padding: var(--xd-sp-4) 18px !important;
+    border-radius: 16px !important;
+  }
+
+  /* ==================== Stock templates ====================
+     Cart, search, 404 and the customer pages are still Dawn's own sections
+     with Dawn's own responsive CSS, which holds up on a phone. They are not
+     redesigned here; these two rules only stop them sitting at a different
+     left edge and a different heading size from every XD page around them. */
+  #MainContent .page-width {
+    padding-left: var(--xd-m-gutter);
+    padding-right: var(--xd-m-gutter);
+  }
+
+  #MainContent .title,
+  #MainContent .main-page-title {
+    font-size: var(--xd-fs-h3);
+    line-height: 1.1;
+  }
+}
+
+/* ==========================================================================
+   6. <= 767.98px - product page
+
+   Same treatment as the home page: Bootstrap edges, one type scale, nothing
+   that relies on hover, and no row of content narrower than it needs to be.
+   ========================================================================== */
+
+@media (max-width: 767.98px) {
+  /* Breadcrumb: one scrollable line. Wrapped, the trail broke mid-crumb and
+     orphaned a chevron on the second row. */
+  .breadcrumb-wrap .breadcrumb {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-right: 16px;
+    font-size: var(--xd-fs-caption);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .breadcrumb-wrap .breadcrumb::-webkit-scrollbar {
+    display: none;
+  }
+
+  .breadcrumb-wrap .breadcrumb-item {
+    white-space: nowrap;
+  }
+
+  /*
+    SECTION RHYTHM
+
+    Every section carries --xd-m-section-y (56px) on each of its edges, so two
+    plain sections sit a uniform 112px apart.
+
+    A section that paints a background is measured by its edges instead, or it
+    pays for the gap twice - once in its neighbour's padding and again in its
+    own - which is what made the tab band read as a hole in the page. So:
+
+      - a band takes NO margin: the neighbour's 56px is the whole gap, and
+        every band on the page floats in an even 56px of white;
+      - a band's own padding is an inset, not a gap - one step (32px), enough
+        that its copy is not sitting on the edge.
+
+    The boundaries down this page:
+
+      breadcrumb   -> product       8 + 24  (see below)
+      product      -> tab band     56 + 0   (the pill bar caps the edge)
+      tab band     -> you may like 32 + 56
+      you may like -> trust bar    56 + 32
+      trust bar    -> footer       32 + 56
+
+    Nothing inside a section may stick out past its padding box either: a
+    pulled up tab bar or a trailing <p> margin lands in the gap and reads as a
+    different size than its neighbours.
+
+    The first boundary is the one exception - the breadcrumb above is a
+    navigation strip attached to the header rather than a section, so it and
+    the product block split a half step between them.
+  */
+  .fbf-pdp.py-5 {
+    padding-top: var(--xd-sp-4) !important;
+    padding-bottom: var(--xd-m-section-y) !important;
+  }
+
+  /* Gallery column to info column: one group to the next. */
+  .fbf-pdp .row.g-5 {
+    --bs-gutter-x: 1.5rem;
+    --bs-gutter-y: var(--xd-sp-4);
+  }
+
+  /* Gallery: less frame, more product. 70px of padding on a 358px tile left
+     the paddle smaller than its own thumbnails. */
+  .rug-gallery__main {
+    padding: 18px;
+    /* Thumbnails belong to the main image, so they sit one step closer than
+       anything else in the column. */
+    margin-bottom: var(--xd-sp-2);
+  }
+
+  .rug-gallery__main img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .fbf-gallery__thumbs {
+    gap: 8px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .fbf-gallery__thumb {
+    width: 72px;
+    flex: 0 0 72px;
+    scroll-snap-align: start;
+  }
+
+  /* Series and rating stack: side by side they collided on a phone. */
+  .fbf-info__meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--xd-sp-1);
+  }
+
+  /* Uppercase crimson label: the same role as .sub-heading on the home page,
+     so the same size. `.fs13` in the markup put it two steps off the scale. */
+  .fbf-info__meta .fs13 {
+    font-size: var(--xd-fs-eyebrow) !important;
+    letter-spacing: 0.16em;
+  }
+
+  .fbf-info__meta .review-star strong {
+    font-size: var(--xd-fs-caption);
+    margin-left: 8px !important;
+  }
+
+  .fbf-info__meta .review-star a {
+    font-size: var(--xd-fs-caption);
+  }
+
+  /* Tax note ships as .fs12, one step below the caption role it plays - and
+     .m-0 pinned it flush against the price with no gap at all. */
+  .fbf-pdp .fs12 {
+    font-size: var(--xd-fs-caption) !important;
+  }
+
+  .fbf-pdp .m-0.fs12 {
+    margin-top: var(--xd-sp-1) !important;
+  }
+
+  .fbf-info__title {
+    font-size: var(--xd-fs-h3);
+    line-height: 1.1;
+    margin-top: var(--xd-sp-1);
+  }
+
+  .fbf-info__tag-line {
+    font-size: var(--xd-fs-caption);
+    line-height: 1.5;
+  }
+
+  .fbf-info__price {
+    font-size: var(--xd-fs-h4);
+  }
+
+  .fbf-info__price del {
+    font-size: var(--xd-fs-small);
+  }
+
+  .fbf-info__label {
+    font-size: var(--xd-fs-eyebrow) !important;
+    margin-top: var(--xd-sp-4) !important;
+  }
+
+  .fbf-info__disc {
+    font-size: var(--xd-fs-body);
+    line-height: 1.7;
+  }
+
+  /* Quantity and Add to cart share one row. Stacked they cost a whole row for
+     a control that needs about 120px. */
+  .fbf-buy-row {
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+
+  .fbf-qty {
+    flex: 0 0 auto;
+  }
+
+  .fbf-cart-btn {
+    flex: 1 1 auto;
+    max-width: none;
+    min-height: 48px;
+  }
+
+  /* Trust strip: three centred columns, icon over label. As a flex row the
+     third item wrapped onto its own line and left the row lopsided. */
+  .fbf-trust-box {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 14px 12px;
+    border-radius: 20px;
+  }
+
+  .fbf-trust__item {
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+    font-size: var(--xd-fs-micro);
+    line-height: 1.35;
+  }
+
+  .fbf-trust__item i {
+    font-size: 16px;
+  }
+
+  /* ---------- Product tabs ---------- */
+  /*
+    The only section on the page that paints a background, so it is measured
+    differently from its neighbours: what the eye reads here is the band's
+    edges, not its text. It gets no margin of its own - the product block's
+    56px bottom padding is the whole gap above the band, and the showcase's
+    56px top padding is the whole gap below it, so the band sits in an even
+    56px of white on both sides.
+
+    Charging it a margin on top of that (56 + 56 to the pill, and 56 of its
+    own bottom padding before another 56) is what made it read as a hole in
+    the page rather than a block on it.
+
+    pt-0 from the markup stays: the pill bar caps the band flush with its top
+    edge. The bottom needs a real inset or the last line of copy sits on the
+    edge - one step, not the full section unit, since the 56px below the band
+    is already doing the separating.
+  */
+  .product-description-section {
+    margin-top: 0 !important;
+    padding-bottom: var(--xd-sp-5);
+  }
+
+  /*
+    No straddle here. The desktop bar hangs half its height above the band
+    edge, which only works while it is one row tall - wrapped to three rows it
+    poked 27px of a ~110px block into the gap above and made that boundary
+    measure 85 where every other one measures 112. The bar caps the band
+    instead, flush with its top edge.
+  */
+  .product-tabs__bar {
+    margin-top: 0;
+  }
+
+  /*
+    All five tabs visible at once, wrapped and centred - not a scroller.
+
+    A horizontal strip only ever showed two and a half labels, and the pill's
+    rounded cap cut the third mid-word however it was faded. Wrapping trades a
+    little height for every option being readable without interaction, which on
+    a five-tab product page is the better deal.
+
+    The container radius drops from 50px to 24px: a pill cap is right for one
+    row and wrong for three, where it bows out around the corner labels.
+  */
+  .product-tabs .nav-tabs {
+    top: 0;
+    width: auto;
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--xd-sp-1);
+    padding: var(--xd-sp-2);
+    border-radius: 24px;
+    overflow: visible;
+  }
+
+  /* Tighter than the desktop 3px/30px so two pills fit a row at 375px. */
+  .product-tabs .nav-tabs .nav-link {
+    padding: 3px 18px;
+    line-height: 24px;
+    white-space: nowrap;
+  }
+
+  /*
+    The panel paints nothing, so its side padding is not an inset - it is just
+    18px of lost reading width that pushed every tab body in from the product
+    copy above it and the "You may also like" heading below it. Dropped to
+    zero, so the container gutter is the only left edge on the page.
+
+    The .row inside cancels itself out (-12px row margin against +12px column
+    padding), so nothing else has to be unwound to land flush.
+
+    Vertically: top padding separates the pill from the first line, bottom
+    padding is left to the band so the two do not stack.
+  */
+  .product-description-section .tab-content {
+    padding: var(--xd-sp-3) 0 0 !important;
+  }
+
+  /* Rich-text metafields arrive as bare <p>/<ul>/<h4>, and the trailing one
+     carries a default bottom margin out past the panel into the gap. Walk the
+     leading and trailing edge of the pane and flatten it. */
+  .product-description-section .tab-pane .row > :first-child,
+  .product-description-section .tab-pane .row > :first-child > :first-child,
+  .product-description-section .tab-pane .row > :first-child > :first-child > :first-child {
+    margin-top: 0;
+  }
+
+  .product-description-section .tab-pane .row > :last-child,
+  .product-description-section .tab-pane .row > :last-child > :last-child,
+  .product-description-section .tab-pane .row > :last-child > :last-child > :last-child {
+    margin-bottom: 0;
+  }
+
+  /* Tab bodies come from the description and from rich-text metafields, so
+     they arrive as bare <p>/<li> at the browser default. Pull them onto the
+     same body size as the rest of the page. */
+  .product-description-section .tab-content,
+  .product-description-section .tab-content p,
+  .product-description-section .tab-content li,
+  .product-description-section .tab-content div {
+    font-size: var(--xd-fs-body);
+    line-height: 1.7;
+  }
+
+  .product-description-section .tab-content h1,
+  .product-description-section .tab-content h2,
+  .product-description-section .tab-content h3,
+  .product-description-section .tab-content h4,
+  .product-description-section .tab-content h5 {
+    font-size: var(--xd-fs-h5);
+    line-height: 1.25;
+  }
+
+  /* ---------- Trust bar (product page only) ----------
+     The other band on the page, so it takes the same inset as the tab band -
+     one step, with the showcase's 56px above and the footer's 56px below
+     doing the separating.
+
+     The shared rule above gives it 24px, which is right on the home page only
+     because the trusted-logos block slides up over it on a negative margin
+     and supplies the space itself. Scoped by template so that stays intact. */
+  main[data-template='product'] .trust-bar {
+    padding: var(--xd-sp-5) 0;
+  }
+}
+
+/* ==========================================================================
+   7. <= 479.98px - small phones, content and product pages
+
+   Display steps come down with the tokens in section 4; what is here is the
+   handful of places where a fixed measurement rather than a type step is what
+   runs out of room.
+   ========================================================================== */
+
+@media (max-width: 479.98px) {
+  /* ---------- Collection ---------- */
+  /* Nothing for the tile strip: its widths are percentages of the row, so the
+     same 2.3 tiles are in view at 320px as at 767px.
+
+     The toolbar's two controls stop fitting one row at about 380px. Wrapped,
+     each takes a full row and the select can use its natural width again. */
+  .xd-facet-bar > .col-md-6 {
+    flex-wrap: wrap;
+    gap: var(--xd-sp-1) !important;
+  }
+
+  .sort-box {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .sort-box .form-select {
+    max-width: none;
+  }
+
+  /* Stacked: "Show results" keeps the bottom row, nearest the thumb. */
+  .xd-filter-panel__foot {
+    flex-wrap: wrap;
+    gap: var(--xd-sp-1);
+  }
+
+  .xd-filter-panel__clear,
+  .xd-filter-panel__apply {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  /* ---------- Article ---------- */
+  .blog-card__meta-list,
+  .blog-card__body {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* ---------- Product page ---------- */
+  .rug-gallery__main {
+    padding: 12px;
+  }
+
+  .fbf-gallery__thumb {
+    width: 64px;
+    flex: 0 0 64px;
+  }
+
+  .fbf-trust-box {
+    padding: 12px 8px;
+  }
+
+  .sm-btn {
+    min-width: 0;
+  }
+}
+
+/* ==========================================================================
+   8. Keyframes
+   ========================================================================== */
+
+@keyframes xd-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    /* Exactly half the track: the second copy lands where the first began. */
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pickleball-card-list {
+    animation: none;
+  }
+}

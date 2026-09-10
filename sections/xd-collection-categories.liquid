@@ -1,0 +1,143 @@
+{% comment %}
+  Markup copied verbatim from the supplied listing.html (.all-product section):
+  the collection title plus the row of round paddle-type tiles.
+
+  ---------------------------------------------------------------------------
+  WHERE THE TILES COME FROM
+
+  Two sources, in this order:
+
+    1. The manually configured blocks - the default, and what the design ships:
+       chosen artwork, chosen order. This row is drawn around round category
+       art (pro01..pro05.png) and `.paddles-card--image img` carries no size
+       rule above 767px, so the artwork's own dimensions ARE the layout. Do not
+       state width/height on these images and do not feed them photos of a
+       different shape; both stretch the tile rather than the box.
+
+    2. A Shopify menu, if one is picked in "Menu": one tile per link, imaged
+       from each linked collection's own image. Only worth using once those
+       collections have artwork of the same shape as the blocks - a collection
+       with no image renders an empty tile, which is the honest failure.
+
+  A tile linking to the collection you are already on is dropped rather than
+  rendered as a link back to itself.
+{% endcomment %}
+{%- comment -%}
+  Heading precedence: section setting -> collection metafield -> collection title.
+  The metafield lets each collection carry its own headline without editing
+  the template.
+{%- endcomment -%}
+{%- liquid
+  assign page_heading = section.settings.heading
+  if page_heading == blank
+    assign page_heading = collection.metafields.custom.heading.value
+  endif
+  if page_heading == blank
+    assign page_heading = collection.title
+  endif
+
+  assign menu = section.settings.menu
+  assign use_menu = false
+  if menu != blank and menu.links.size > 0
+    assign use_menu = true
+  endif
+-%}
+
+<section class="all-product py-5">
+  <div class="container custom-width">
+    <div class="text-center mb-5">
+      <h2 class="all-heading text-capitalize text-primary">{{ page_heading }}</h2>
+    </div>
+    <div class="row">
+      {%- if use_menu -%}
+        {%- for link in menu.links -%}
+          {%- liquid
+            # `link.object` is the collection itself for a collection link,
+            # so the tile uses the artwork the merchant set on the collection
+            # and nothing else. Falling back to its first
+            # product's photo puts a tall paddle shot where the design wants
+            # round category art, and .paddles-card--image img is unconstrained
+            # on desktop so nothing downstream would rein it in.
+            assign linked = link.object
+            assign tile_image = blank
+            if link.type == 'collection_link'
+              assign tile_image = linked.image
+            endif
+          -%}
+          {%- unless link.current -%}
+            <div class="col">
+              <a class="paddles-card d-block" href="{{ link.url }}">
+                <div class="paddles-card--image">
+                  {%- if tile_image != blank -%}
+                    {%- comment -%}
+                      Deliberately no width/height: above 767px the only rule
+                      for this image is `position: relative; top: -40px`, so the
+                      artwork's own dimensions are the layout. Stating a height
+                      here stretches the tile.
+                    {%- endcomment -%}
+                    <img src="{{ tile_image | image_url: width: 400 }}" loading="lazy" alt="{{ tile_image.alt | default: link.title | escape }}">
+                  {%- endif -%}
+                </div>
+                <h4 class="paddles-card-title">{{ link.title | escape }}</h4>
+              </a>
+            </div>
+          {%- endunless -%}
+        {%- endfor -%}
+      {%- else -%}
+        {%- for block in section.blocks -%}
+          <div class="col" {{ block.shopify_attributes }}>
+            <a class="paddles-card d-block" href="{{ block.settings.link | default: '#' }}">
+              <div class="paddles-card--image">
+                {%- if block.settings.image != blank -%}
+                  <img src="{{ block.settings.image | image_url: width: 400 }}" loading="lazy" alt="{{ block.settings.image.alt | escape }}">
+                {%- endif -%}
+              </div>
+              <h4 class="paddles-card-title">{{ block.settings.title }}</h4>
+            </a>
+          </div>
+        {%- endfor -%}
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Collection categories",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "info": "Leave blank to use the collection's custom.heading metafield, then its title"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "info": "One tile per link, using each linked collection's own image. Leave empty to use the blocks below instead."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "tile",
+      "name": "Paddle type",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Image" },
+        { "type": "text", "id": "title", "label": "Title", "default": "Power" },
+        { "type": "url", "id": "link", "label": "Link" }
+      ]
+    }
+  ],
+  "max_blocks": 8,
+  "presets": [
+    {
+      "name": "XD Collection categories",
+      "blocks": [
+        { "type": "tile" }, { "type": "tile" }, { "type": "tile" },
+        { "type": "tile" }, { "type": "tile" }
+      ]
+    }
+  ]
+}
+{% endschema %}

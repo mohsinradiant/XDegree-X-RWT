@@ -1,0 +1,186 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "xd-breadcrumb": {
+      "type": "xd-breadcrumb",
+      "settings": {
+        "home_label": "Home"
+      }
+    },
+    "xd-product": {
+      "type": "xd-product",
+      "blocks": {
+        "b1": {
+          "type": "trust",
+          "settings": {
+            "icon_class": "fa-regular fa-truck",
+            "text": "Free Delivery"
+          }
+        },
+        "b2": {
+          "type": "trust",
+          "settings": {
+            "icon_class": "fa-regular fa-repeat",
+            "text": "30-Days Return"
+          }
+        },
+        "b3": {
+          "type": "trust",
+          "settings": {
+            "icon_class": "fa-sharp fa-regular fa-shield-check",
+            "text": "Lifetime Warranty"
+          }
+        }
+      },
+      "block_order": [
+        "b1",
+        "b2",
+        "b3"
+      ],
+      "settings": {
+        "tagline": "16mm Polymer Core   ·   Tournament Edition   ·   T700 Carbon",
+        "tax_note": "<p>Inclusive of all Taxes. <strong>Free Shipping</strong> on this Order.</p>",
+        "add_to_cart_label": "Add to Cart",
+        "sold_out_label": "Sold Out",
+        "unavailable_label": "Unavailable",
+        "reviews_label": "Reviews",
+        "discount_suffix": "% OFF"
+      }
+    },
+    "xd-tabs": {
+      "type": "xd-product-tabs",
+      "blocks": {
+        "t1": {
+          "type": "tab",
+          "settings": {
+            "label": "The Story",
+            "source": "description",
+            "metafield": "custom.tech_specs",
+            "text": ""
+          }
+        },
+        "t2": {
+          "type": "tab",
+          "settings": {
+            "label": "Tech Specs",
+            "source": "metafield",
+            "metafield": "custom.tech_specs",
+            "text": ""
+          }
+        },
+        "t3": {
+          "type": "tab",
+          "settings": {
+            "label": "Details & Care",
+            "source": "metafield",
+            "metafield": "custom.details_care",
+            "text": ""
+          }
+        },
+        "t4": {
+          "type": "tab",
+          "settings": {
+            "label": "Shipping & Returns",
+            "source": "metafield",
+            "metafield": "custom.shipping_returns",
+            "text": ""
+          }
+        },
+        "t5": {
+          "type": "tab",
+          "settings": {
+            "label": "Warranty",
+            "source": "metafield",
+            "metafield": "custom.warranty",
+            "text": ""
+          }
+        }
+      },
+      "block_order": [
+        "t1",
+        "t2",
+        "t3",
+        "t4",
+        "t5"
+      ],
+      "settings": {}
+    },
+    "xd-related": {
+      "type": "xd-product-showcase",
+      "settings": {
+        "background": "white",
+        "eyebrow": "Complete Your Kit",
+        "heading": "You May Also Like",
+        "description": "Every element optimized dynamically for structural integrity and high-velocity gameplay.",
+        "collection": "frontpage",
+        "products_to_show": 6,
+        "view_all_label": "View all",
+        "view_all_link": "",
+        "layout": "slider",
+        "card_style": "bestsellers",
+        "show_badges": false,
+        "badge_text": "",
+        "buy_label": "BUY NOW"
+      }
+    },
+    "xd-trust-bar": {
+      "type": "xd-trust-bar",
+      "blocks": {
+        "i1": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon04.png",
+            "label": "Tournament Grade Quality",
+            "description": "Built for competitive performance and durability."
+          }
+        },
+        "i2": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon05.png",
+            "label": "Global Shipping",
+            "description": "Fast and secure worldwide product delivery."
+          }
+        },
+        "i3": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon06.png",
+            "label": "Professional Court Solutions",
+            "description": "Indoor and outdoor court systems for all facilities."
+          }
+        },
+        "i4": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon07.png",
+            "label": "Premium Player Support",
+            "description": "Expert assistance for players, clubs and institutions."
+          }
+        }
+      },
+      "block_order": [
+        "i1",
+        "i2",
+        "i3",
+        "i4"
+      ],
+      "settings": {}
+    }
+  },
+  "order": [
+    "xd-breadcrumb",
+    "xd-product",
+    "xd-tabs",
+    "xd-related",
+    "xd-trust-bar"
+  ]
+}
