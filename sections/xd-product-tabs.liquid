@@ -2,11 +2,26 @@
   Markup copied verbatim from the supplied "product display page.html"
   (.product-description-section). Bootstrap tabs.
 
-  Each tab is a block whose body can come from the product description, a
-  product metafield (so copy varies per product) or fixed text typed into
-  the theme editor.
+  Everything in this section comes from the product, not from section
+  settings: the `custom.product_tabs` metafield lists "Product tab" metaobjects
+  in display order, and each entry carries
+
+    title       - the tab label
+    content     - rich text body; left empty, the product description is used
+                  (that is how The Story tab works, so descriptions are not
+                  duplicated and keep their own images)
+    image       - optional side image; switches the pane to the design's
+                  text + image two-column layout
+    stat_value  - optional stat card on that image, e.g. 16 / mm / Core
+    stat_unit     Thickness
+    stat_label
+
+  Shared entries (Shipping & Returns, Warranty...) are referenced by many
+  products, so their copy is edited once. A product with no tabs listed
+  renders no tab section at all rather than an empty bar.
 {% endcomment %}
-{%- if section.blocks.size > 0 -%}
+{%- assign tabs = product.metafields.custom.product_tabs.value -%}
+{%- if tabs != blank -%}
   <section class="product-description-section bg-light section-tb-padding96 pt-0 mt-5">
     <div class="container custom-width">
       <div class="product-tabs">
@@ -17,101 +32,78 @@
         {%- endcomment -%}
         <div class="product-tabs__bar">
         <ul class="nav nav-tabs border-0" id="myTab" role="tablist">
-          {%- for block in section.blocks -%}
-            <li class="nav-item" role="presentation" {{ block.shopify_attributes }}>
+          {%- for tab in tabs -%}
+            <li class="nav-item" role="presentation">
               <button
                 class="nav-link heading-font2{% if forloop.first %} active{% endif %}"
-                id="xd-tab-{{ block.id }}"
+                id="xd-tab-{{ section.id }}-{{ forloop.index }}"
                 data-bs-toggle="tab"
-                data-bs-target="#xd-pane-{{ block.id }}"
+                data-bs-target="#xd-pane-{{ section.id }}-{{ forloop.index }}"
                 type="button"
                 role="tab"
               >
-                {{- block.settings.label -}}
+                {{- tab.title.value | escape -}}
               </button>
             </li>
           {%- endfor -%}
         </ul>
         </div>
         <div class="tab-content p-4">
-          {%- for block in section.blocks -%}
+          {%- for tab in tabs -%}
             {%- liquid
-              assign body = blank
-              assign mf = blank
-              if block.settings.source == 'description'
-                assign body = product.description
-              elsif block.settings.source == 'metafield'
-                assign key = block.settings.metafield | split: '.'
-                assign mf = product.metafields[key[0]][key[1]]
-                if mf == blank
-                  assign body = block.settings.text
-                endif
-              else
-                assign body = block.settings.text
+              assign tab_image = tab.image.value
+              assign stat_value = tab.stat_value.value
+              assign has_content = false
+              if tab.content.value != blank
+                assign has_content = true
               endif
             -%}
             {%- comment -%}
-              The product description already ships its own .col-* grid (the
-              Story tab is a two-column text + image layout), so it goes
-              straight into the .row. Metafield / fixed-text bodies have no
-              grid of their own and get a full-width column.
+              xd-pane--<label> is the styling hook for per-tab heading rules
+              in xd-overrides.css (Details & Care, Shipping & Returns...).
             {%- endcomment -%}
             <div
-              class="tab-pane fade{% if forloop.first %} show active{% endif %}"
-              id="xd-pane-{{ block.id }}"
+              class="tab-pane fade{% if forloop.first %} show active{% endif %} xd-pane--{{ tab.title.value | handleize }}"
+              id="xd-pane-{{ section.id }}-{{ forloop.index }}"
               role="tabpanel"
             >
               <div class="row text-primary">
-                {%- if block.settings.source == 'description' and block.settings.image != blank -%}
-                  {%- liquid
-                    # product.html "The Story": copy on the left, a photo with a
-                    # stat card on the right. The stat is read from the product's
-                    # own option (Thickness "14mm" -> 14 + mm) so it can never
-                    # contradict the variant picker above, and the card is left
-                    # out for a product that has no such option.
-                    assign stat_value = blank
-                    assign stat_option = block.settings.stat_option | downcase | strip
-                    assign stat_unit = block.settings.stat_unit | downcase | strip
-                    if stat_option != blank
-                      for option in product.options_with_values
-                        assign option_key = option.name | downcase | strip
-                        if option_key == stat_option
-                          assign stat_value = option.selected_value | downcase | remove: stat_unit | strip
-                        endif
-                      endfor
-                    endif
-                  -%}
-                  <div class="col-md-6">{{ body }}</div>
+                {%- if tab_image != blank -%}
+                  <div class="col-md-6">
+                    {%- if has_content -%}{{ tab.content | metafield_tag }}{%- else -%}{{ product.description }}{%- endif -%}
+                  </div>
                   <div class="col-md-6">
                     <div class="tab-right-image">
                       <img
-                        src="{{ block.settings.image | image_url: width: 1000 }}"
+                        src="{{ tab_image | image_url: width: 1000 }}"
                         class="img-fluid"
-                        alt="{{ block.settings.image.alt | escape }}"
-                        width="{{ block.settings.image.width }}"
-                        height="{{ block.settings.image.height }}"
+                        alt="{{ tab_image.alt | escape }}"
+                        width="{{ tab_image.width }}"
+                        height="{{ tab_image.height }}"
                       >
                       {%- if stat_value != blank -%}
                         <div class="tab-right-image-box">
                           <div class="heading-font fs49 text-primary lh100 fw600">
                             {{- stat_value -}}
-                            <span class="text-drak-crimson-red">{{ block.settings.stat_unit }}</span>
+                            <span class="text-drak-crimson-red">{{ tab.stat_unit.value }}</span>
                           </div>
-                          <div class="fs12 text-uppercase text-primary">{{ block.settings.stat_label }}</div>
+                          <div class="fs12 text-uppercase text-primary">{{ tab.stat_label.value }}</div>
                         </div>
                       {%- endif -%}
                     </div>
                   </div>
-                {%- elsif block.settings.source == 'description' -%}
-                  {{ body }}
+                {%- elsif has_content -%}
+                  {%- comment -%}
+                    A rich text field has to go through `metafield_tag`;
+                    outputting its `.value` dumps raw JSON instead.
+                  {%- endcomment -%}
+                  <div class="col-md-12 text-primary">{{ tab.content | metafield_tag }}</div>
                 {%- else -%}
-                  <div class="col-md-12 text-primary">
-                    {%- comment -%}
-                      A rich_text_field has to go through `metafield_tag`;
-                      outputting it (or its `.value`) dumps raw JSON instead.
-                    {%- endcomment -%}
-                    {%- if mf != blank -%}{{ mf | metafield_tag }}{%- else -%}{{ body }}{%- endif -%}
-                  </div>
+                  {%- comment -%}
+                    The product description ships its own .col-* grid, so it
+                    goes straight into the .row.
+                  {%- endcomment -%}
+                  {{ product.description }}
                 {%- endif -%}
               </div>
             </div>
@@ -125,20 +117,45 @@
 {% schema %}
 {
   "name": "XD Product tabs",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Tabs come from each product's \"Product tabs\" metafield (Products > a product > Metafields). Edit tab labels, content, images and stat cards in Content > Metaobjects > Product tab."
+    }
+  ],
+  "presets": [
+    {
+      "name": "XD Product tabs"
+    }
+  ],
   "blocks": [
     {
       "type": "tab",
       "name": "Tab",
       "settings": [
-        { "type": "text", "id": "label", "label": "Tab label", "default": "The Story" },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Tab label",
+          "default": "The Story"
+        },
         {
           "type": "select",
           "id": "source",
           "label": "Content source",
           "options": [
-            { "value": "description", "label": "Product description" },
-            { "value": "metafield", "label": "Product metafield" },
-            { "value": "text", "label": "Fixed text" }
+            {
+              "value": "description",
+              "label": "Product description"
+            },
+            {
+              "value": "metafield",
+              "label": "Product metafield"
+            },
+            {
+              "value": "text",
+              "label": "Fixed text"
+            }
           ],
           "default": "text"
         },
@@ -148,13 +165,21 @@
           "label": "Metafield (namespace.key)",
           "default": "custom.tech_specs"
         },
-        { "type": "richtext", "id": "text", "label": "Fixed text" },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Fixed text"
+        },
         {
           "type": "header",
           "content": "Side image",
           "info": "Product description tabs only. Adds the design's image column beside the description."
         },
-        { "type": "image_picker", "id": "image", "label": "Image" },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
         {
           "type": "text",
           "id": "stat_option",
@@ -162,17 +187,21 @@
           "info": "The stat card shows the product's selected value for this option, e.g. Thickness",
           "default": "Thickness"
         },
-        { "type": "text", "id": "stat_unit", "label": "Stat card unit", "default": "mm" },
-        { "type": "text", "id": "stat_label", "label": "Stat card label", "default": "Core Thickness" }
+        {
+          "type": "text",
+          "id": "stat_unit",
+          "label": "Stat card unit",
+          "default": "mm"
+        },
+        {
+          "type": "text",
+          "id": "stat_label",
+          "label": "Stat card label",
+          "default": "Core Thickness"
+        }
       ]
     }
   ],
-  "max_blocks": 6,
-  "presets": [
-    {
-      "name": "XD Product tabs",
-      "blocks": [{ "type": "tab" }, { "type": "tab" }, { "type": "tab" }]
-    }
-  ]
+  "max_blocks": 6
 }
 {% endschema %}

@@ -57,64 +57,6 @@
     },
     "xd-tabs": {
       "type": "xd-product-tabs",
-      "blocks": {
-        "t1": {
-          "type": "tab",
-          "settings": {
-            "label": "The Story",
-            "source": "description",
-            "metafield": "custom.tech_specs",
-            "text": "",
-            "image": "shopify://shop_images/image01.jpg",
-            "stat_option": "Thickness",
-            "stat_unit": "mm",
-            "stat_label": "Core Thickness"
-          }
-        },
-        "t2": {
-          "type": "tab",
-          "settings": {
-            "label": "Tech Specs",
-            "source": "metafield",
-            "metafield": "custom.tech_specs",
-            "text": ""
-          }
-        },
-        "t3": {
-          "type": "tab",
-          "settings": {
-            "label": "Details & Care",
-            "source": "metafield",
-            "metafield": "custom.details_care",
-            "text": ""
-          }
-        },
-        "t4": {
-          "type": "tab",
-          "settings": {
-            "label": "Shipping & Returns",
-            "source": "metafield",
-            "metafield": "custom.shipping_returns",
-            "text": ""
-          }
-        },
-        "t5": {
-          "type": "tab",
-          "settings": {
-            "label": "Warranty",
-            "source": "metafield",
-            "metafield": "custom.warranty",
-            "text": ""
-          }
-        }
-      },
-      "block_order": [
-        "t1",
-        "t2",
-        "t3",
-        "t4",
-        "t5"
-      ],
       "settings": {}
     },
     "xd-related": {
