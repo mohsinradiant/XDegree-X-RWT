@@ -18,7 +18,8 @@
     </div>
   </div>
 </div>
-<header class="site-header py-2">
+{%- comment -%} The design's product page header is py-3; every other page is py-2. {%- endcomment -%}
+<header class="site-header {% if template.name == 'product' %}py-3{% else %}py-2{% endif %}">
   <div class="container custom-width">
     <nav class="site-header__navbar navbar navbar-expand-xl p-0">
       <a class="site-header__brand navbar-brand" href="{{ routes.root_url }}">

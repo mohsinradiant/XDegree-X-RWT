@@ -17,9 +17,12 @@
                 {%- endif -%}
               </div>
               <div class="blog-card--content">
-                <h4 class="blog-card-title heading-font">
-                  <a href="{{ article.url }}" class="text-primary">{{ article.title }}</a>
-                </h4>
+                {%- comment -%}
+                  Plain text, as in blog.html: an <a> here picks up the design's
+                  `.blog-card--content a` rule (11px uppercase red) meant for the
+                  "Read Article" link. The image and that link still go to the post.
+                {%- endcomment -%}
+                <h4 class="blog-card-title heading-font">{{ article.title }}</h4>
                 <p>{{ article.excerpt_or_content | strip_html | truncate: 90 }}</p>
                 <a href="{{ article.url }}">{{ section.settings.read_label }}</a>
               </div>

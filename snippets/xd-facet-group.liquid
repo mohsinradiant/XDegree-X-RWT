@@ -15,15 +15,24 @@
   0. Tag values are ORed, which is what multi-select has to mean. The metafields
   are still there and still correct; they are just not what the sidebar reads.
 
+  VALUE ORDER
+
+  Shopify sends values alphabetically; listing.html does not list them that way
+  (Beginner, Intermediate, Advanced, Professional). `value_order` names labels
+  in the order to show them. Named values come first, in that order; anything
+  not named follows in Shopify's order, so a value added in the admin still
+  appears without a theme edit.
+
   Accepts:
     filter        - a collection filter (drop from collection.filters)
     prefix        - blank for a whole filter; otherwise the tag prefix to slice
     group_label   - accordion header text
-    style         - price | swatch | rating | checkbox
+    style         - price | swatch | rating | link | checkbox
     panel_id      - unique id for the collapse target
     show_count    - render each value's result count
     rating_suffix - text after the stars ("& Up")
     design_colours- comma list of colour handles main.css already paints
+    value_order   - comma list of value labels, in display order
 {% endcomment %}
 {%- liquid
   assign design_colour_list = design_colours | split: ','
@@ -37,17 +46,69 @@
       assign group_active = 1
     endif
   else
-    for value in filter.active_values
-      if prefix == blank
-        assign group_active = group_active | plus: 1
-      else
-        assign value_prefix = value.label | split: separator | first
-        if value_prefix == prefix
+    for value in filter.values
+      if value.active
+        if prefix == blank
           assign group_active = group_active | plus: 1
+        else
+          assign value_prefix = value.label | split: separator | first
+          if value_prefix == prefix
+            assign group_active = group_active | plus: 1
+          endif
         endif
       endif
     endfor
   endif
+
+  # This group's values as "index~label key" rows. `~` and `|` are the row
+  # delimiters, so they are dropped from the key; they only affect matching.
+  assign group_rows_blob = ''
+  for value in filter.values
+    assign row_label = value.label
+    assign row_in_group = true
+    if prefix != blank
+      assign row_prefix = row_label | split: separator | first
+      if row_prefix == prefix
+        assign row_label = row_label | remove_first: prefix | remove_first: separator
+      else
+        assign row_in_group = false
+      endif
+    endif
+    if row_in_group
+      assign row_key = row_label | downcase | strip | remove: '~' | remove: '|'
+      assign group_rows_blob = group_rows_blob | append: forloop.index0 | append: '~' | append: row_key | append: '|'
+    endif
+  endfor
+  assign group_rows = group_rows_blob | split: '|'
+
+  # The wanted order, one stripped key per entry, so both passes below compare
+  # like with like and no value can be emitted twice.
+  assign order_keys_raw = value_order | downcase | split: ','
+  assign order_keys_blob = ''
+  for order_key in order_keys_raw
+    assign order_key_clean = order_key | strip
+    if order_key_clean != blank
+      assign order_keys_blob = order_keys_blob | append: order_key_clean | append: '|'
+    endif
+  endfor
+  assign order_keys = order_keys_blob | split: '|'
+
+  assign value_indices_blob = ''
+  for order_key in order_keys
+    for row in group_rows
+      assign row_key = row | split: '~' | last
+      if row_key == order_key
+        assign value_indices_blob = value_indices_blob | append: row | split: '~' | first | append: '|'
+      endif
+    endfor
+  endfor
+  for row in group_rows
+    assign row_key = row | split: '~' | last
+    unless order_keys contains row_key
+      assign value_indices_blob = value_indices_blob | append: row | split: '~' | first | append: '|'
+    endunless
+  endfor
+  assign value_indices = value_indices_blob | split: '|'
 -%}
 <div class="accordion-item" data-xd-group="{{ panel_id }}">
   <h2 class="accordion-header">
@@ -117,66 +178,64 @@
         {%- endcomment -%}
         <div class="accordion-body ps-3">
           <div class="d-flex gap-3 flex-wrap">
-            {%- for value in filter.values -%}
+            {%- for value_index in value_indices -%}
               {%- liquid
-                assign label = value.label
-                assign in_group = true
-                if prefix != blank
-                  assign value_prefix = label | split: separator | first
-                  if value_prefix == prefix
-                    assign label = label | remove_first: prefix | remove_first: separator
-                  else
-                    assign in_group = false
+                assign idx = value_index | plus: 0
+                # Picked by walking the list: filter.values[n] with a computed n
+                # comes back empty.
+                for candidate_value in filter.values
+                  if forloop.index0 == idx
+                    assign value = candidate_value
                   endif
+                endfor
+                assign label = value.label
+                if prefix != blank
+                  assign label = label | remove_first: prefix | remove_first: separator
                 endif
-              -%}
-              {%- if in_group -%}
-                {%- liquid
-                  assign input_id = panel_id | append: '-' | append: forloop.index
-                  assign colour_handle = label | handleize
-                  assign colour_class = colour_handle | prepend: 'color-'
+                assign input_id = panel_id | append: '-' | append: idx
+                assign colour_handle = label | handleize
+                assign colour_class = colour_handle | prepend: 'color-'
 
-                  # An inline style would outrank the design's class, so it is
-                  # only emitted for colours the design does not already paint.
-                  assign chip = ''
-                  unless design_colour_list contains colour_handle
-                    if value.swatch.image
-                      assign chip_image = value.swatch.image | image_url: width: 100
-                      capture chip
-                        echo 'background-image:url(' | append: chip_image | append: ');background-size:cover;background-position:center;'
-                      endcapture
-                    elsif value.swatch.color
-                      capture chip
-                        echo 'background-color:rgb(' | append: value.swatch.color.rgb | append: ');'
-                      endcapture
-                    endif
-                  endunless
-                -%}
-                <div class="color-option">
-                  <input
-                    type="checkbox"
-                    class="color-checkbox"
-                    id="{{ input_id }}"
-                    form="XdFacetForm"
-                    name="{{ value.param_name }}"
-                    value="{{ value.value | escape }}"
-                    data-xd-facet-input
-                    data-xd-count="{{ value.count }}"
-                    {% if value.active %}checked{% endif %}
-                    {% if value.count == 0 and value.active == false %}disabled{% endif %}
-                  >
-                  <label
-                    for="{{ input_id }}"
-                    class="fbf-color__opt {{ colour_class }}{% if chip == blank %} fbf-color__opt--blank{% endif %}"
-                    {% if chip != blank %}style="{{ chip }}"{% endif %}
-                    title="{{ label | escape }}"
-                  >
-                    <span class="visually-hidden">
-                      {{- label | escape }} (<span data-xd-count-text>{{ value.count }}</span>)
-                    </span>
-                  </label>
-                </div>
-              {%- endif -%}
+                # An inline style would outrank the design's class, so it is
+                # only emitted for colours the design does not already paint.
+                assign chip = ''
+                unless design_colour_list contains colour_handle
+                  if value.swatch.image
+                    assign chip_image = value.swatch.image | image_url: width: 100
+                    capture chip
+                      echo 'background-image:url(' | append: chip_image | append: ');background-size:cover;background-position:center;'
+                    endcapture
+                  elsif value.swatch.color
+                    capture chip
+                      echo 'background-color:rgb(' | append: value.swatch.color.rgb | append: ');'
+                    endcapture
+                  endif
+                endunless
+              -%}
+              <div class="color-option">
+                <input
+                  type="checkbox"
+                  class="color-checkbox"
+                  id="{{ input_id }}"
+                  form="XdFacetForm"
+                  name="{{ value.param_name }}"
+                  value="{{ value.value | escape }}"
+                  data-xd-facet-input
+                  data-xd-count="{{ value.count }}"
+                  {% if value.active %}checked{% endif %}
+                  {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                >
+                <label
+                  for="{{ input_id }}"
+                  class="fbf-color__opt {{ colour_class }}{% if chip == blank %} fbf-color__opt--blank{% endif %}"
+                  {% if chip != blank %}style="{{ chip }}"{% endif %}
+                  title="{{ label | escape }}"
+                >
+                  <span class="visually-hidden">
+                    {{- label | escape }} (<span data-xd-count-text>{{ value.count }}</span>)
+                  </span>
+                </label>
+              </div>
             {%- endfor -%}
           </div>
         </div>
@@ -188,23 +247,23 @@
           something non-numeric arrives the label is printed as-is.
         {%- endcomment -%}
         <div class="accordion-body ps-3">
-          <div class="product-review">
-            {%- for value in filter.values -%}
-              {%- liquid
-                assign label = value.label
-                assign in_group = true
-                if prefix != blank
-                  assign value_prefix = label | split: separator | first
-                  if value_prefix == prefix
-                    assign label = label | remove_first: prefix | remove_first: separator
-                  else
-                    assign in_group = false
-                  endif
-                endif
-              -%}
-              {%- if in_group -%}
+          <div class="d-flex gap-3 flex-wrap">
+            <div class="product-review">
+              {%- for value_index in value_indices -%}
                 {%- liquid
-                  assign input_id = panel_id | append: '-' | append: forloop.index
+                  assign idx = value_index | plus: 0
+                  # Picked by walking the list: filter.values[n] with a computed n
+                  # comes back empty.
+                  for candidate_value in filter.values
+                    if forloop.index0 == idx
+                      assign value = candidate_value
+                    endif
+                  endfor
+                  assign label = value.label
+                  if prefix != blank
+                    assign label = label | remove_first: prefix | remove_first: separator
+                  endif
+                  assign input_id = panel_id | append: '-' | append: idx
                   assign score = label | times: 1.0
                   assign full_stars = score | floor
                   assign has_half = false
@@ -214,7 +273,7 @@
                   endif
                   assign half_index = full_stars | plus: 1
                 -%}
-                <label class="review-star d-block mb-2{% if value.active %} is-active{% endif %}" for="{{ input_id }}">
+                <label class="review-star d-block{% if value.active %} is-active{% endif %}" for="{{ input_id }}">
                   <input
                     type="checkbox"
                     class="visually-hidden"
@@ -230,13 +289,13 @@
                   {%- if score > 0 -%}
                     {%- for i in (1..5) -%}
                       {%- if i <= full_stars -%}
-                        <i class="fa-solid fa-star" aria-hidden="true"></i>
+                        <i class="fa-sharp fa-solid fa-star" aria-hidden="true"></i>
                       {%- elsif i == half_index and has_half -%}
-                        <i class="fa-duotone fa-solid fa-star-half" aria-hidden="true"></i>
+                        <i class="fa-duotone fa-sharp fa-solid fa-star-half" aria-hidden="true"></i>
                       {%- else -%}
-                        <i class="fa-regular fa-star" aria-hidden="true"></i>
+                        <i class="fa-sharp fa-regular fa-star" aria-hidden="true"></i>
                       {%- endif -%}
-                    {%- endfor -%}
+                    {%- endfor %}
                     <strong class="d-inline-block ms-2">{{ rating_suffix }}</strong>
                   {%- else -%}
                     <strong class="d-inline-block">{{ label | escape }}</strong>
@@ -245,52 +304,122 @@
                     <span class="ms-1">(<span data-xd-count-text>{{ value.count }}</span>)</span>
                   {%- endif -%}
                 </label>
-              {%- endif -%}
-            {%- endfor -%}
+              {%- endfor -%}
+            </div>
           </div>
+        </div>
+
+      {%- when 'link' -%}
+        {%- comment -%}
+          listing.html's Category group: plain `a.filter-link` rows with a count,
+          no checkbox, and no ps-3 on the body.
+
+          The link is the control, but a visually hidden checkbox stays behind
+          it. That checkbox is what #XdFacetForm serialises and what the grid
+          script counts, syncs and clears, so this group is multi-select and
+          updates in place exactly like the others. The script toggles it on
+          click; with JavaScript off the href adds or removes the filter the
+          long way round.
+        {%- endcomment -%}
+        <div class="accordion-body">
+          <ul class="list-unstyled m-0">
+            {%- for value_index in value_indices -%}
+              {%- liquid
+                assign idx = value_index | plus: 0
+                # Picked by walking the list: filter.values[n] with a computed n
+                # comes back empty.
+                for candidate_value in filter.values
+                  if forloop.index0 == idx
+                    assign value = candidate_value
+                  endif
+                endfor
+                assign label = value.label
+                if prefix != blank
+                  assign label = label | remove_first: prefix | remove_first: separator
+                endif
+                assign input_id = panel_id | append: '-' | append: idx
+                assign is_disabled = false
+                if value.count == 0 and value.active == false
+                  assign is_disabled = true
+                endif
+              -%}
+              <li class="xd-facet-link-row">
+                <input
+                  type="checkbox"
+                  class="visually-hidden"
+                  id="{{ input_id }}"
+                  form="XdFacetForm"
+                  name="{{ value.param_name }}"
+                  value="{{ value.value | escape }}"
+                  tabindex="-1"
+                  aria-hidden="true"
+                  data-xd-facet-input
+                  data-xd-count="{{ value.count }}"
+                  {% if value.active %}checked{% endif %}
+                  {% if is_disabled %}disabled{% endif %}
+                >
+                <a
+                  href="{% if value.active %}{{ value.url_to_remove }}{% else %}{{ value.url_to_add }}{% endif %}"
+                  class="filter-link d-flex justify-content-between align-items-center w-100{% if value.active %} is-active{% endif %}{% if is_disabled %} is-disabled{% endif %}"
+                  role="checkbox"
+                  aria-checked="{{ value.active }}"
+                  {% if is_disabled %}aria-disabled="true"{% endif %}
+                  data-xd-facet-link="{{ input_id }}"
+                >
+                  {{- label | escape }} <span data-xd-count-text>{{ value.count }}</span>
+                </a>
+              </li>
+            {%- endfor -%}
+          </ul>
         </div>
 
       {%- else -%}
         <div class="accordion-body ps-3">
           <ul class="list-unstyled m-0">
-            {%- for value in filter.values -%}
+            {%- for value_index in value_indices -%}
               {%- liquid
-                assign label = value.label
-                assign in_group = true
-                if prefix != blank
-                  assign value_prefix = label | split: separator | first
-                  if value_prefix == prefix
-                    assign label = label | remove_first: prefix | remove_first: separator
-                  else
-                    assign in_group = false
+                assign idx = value_index | plus: 0
+                # Picked by walking the list: filter.values[n] with a computed n
+                # comes back empty.
+                for candidate_value in filter.values
+                  if forloop.index0 == idx
+                    assign value = candidate_value
                   endif
+                endfor
+                assign label = value.label
+                if prefix != blank
+                  assign label = label | remove_first: prefix | remove_first: separator
                 endif
+                assign input_id = panel_id | append: '-' | append: idx
               -%}
-              {%- if in_group -%}
-                {%- assign input_id = panel_id | append: '-' | append: forloop.index -%}
-                <li class="mb-2">
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="{{ input_id }}"
-                      form="XdFacetForm"
-                      name="{{ value.param_name }}"
-                      value="{{ value.value | escape }}"
-                      data-xd-facet-input
-                      data-xd-count="{{ value.count }}"
-                      {% if value.active %}checked{% endif %}
-                      {% if value.count == 0 and value.active == false %}disabled{% endif %}
-                    >
-                    <label class="form-check-label filter-link d-flex justify-content-between align-items-center w-100" for="{{ input_id }}">
-                      {{ label | escape }}
-                      {%- if show_count -%}
-                        <span data-xd-count-text>{{ value.count }}</span>
-                      {%- endif -%}
-                    </label>
-                  </div>
-                </li>
-              {%- endif -%}
+              {%- comment -%} listing.html spaces every row but the last with mb-2. {%- endcomment -%}
+              <li{% unless forloop.last %} class="mb-2"{% endunless %}>
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="{{ input_id }}"
+                    form="XdFacetForm"
+                    name="{{ value.param_name }}"
+                    value="{{ value.value | escape }}"
+                    data-xd-facet-input
+                    data-xd-count="{{ value.count }}"
+                    {% if value.active %}checked{% endif %}
+                    {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                  >
+                  {%- comment -%}
+                    The design only lays a label out as a spread row when it
+                    carries a count; plain checkbox rows are a bare
+                    .form-check-label.filter-link.
+                  {%- endcomment -%}
+                  <label class="form-check-label filter-link{% if show_count %} d-flex justify-content-between align-items-center w-100{% endif %}" for="{{ input_id }}">
+                    {{ label | escape }}
+                    {%- if show_count -%}
+                      <span data-xd-count-text>{{ value.count }}</span>
+                    {%- endif -%}
+                  </label>
+                </div>
+              </li>
             {%- endfor -%}
           </ul>
         </div>

@@ -88,7 +88,7 @@
     "xd-trending": {
       "type": "xd-product-showcase",
       "settings": {
-        "background": "white",
+        "background": "light",
         "eyebrow": "HOT RIGHT NOW IN 2026",
         "heading": "Trending",
         "description": "Every element optimized dynamically for structural integrity and high-velocity gameplay.",

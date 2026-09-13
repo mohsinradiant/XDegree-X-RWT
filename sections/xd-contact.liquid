@@ -1,0 +1,288 @@
+{% comment %}
+  Contact page body. The supplied design has no contact page, so this is
+  assembled only from pieces it does ship:
+
+    - .section-heading / .sub-heading / .all-heading   (every content page)
+    - .contact-info__item / __icon / __content          (main.css)
+    - .social-handles                                    (main.css)
+    - the register page's form card, fields and submit button
+      (.register-form, .form-control, .product-card-btn.submit-btn)
+
+  The card carries .register-form so the design's field styling, mobile
+  spacing and entrance animation apply as they do on the register page, and
+  .xd-contact__card for the card itself (xd-overrides.css): the design scopes
+  that look to .register-container, whose other rules position the register
+  page's side image.
+
+  Contact details default to the store's own (Settings > Store details), so
+  they stay correct without editing the theme; an item with no value is not
+  rendered. Social icons use the theme's social media settings, the same ones
+  the footer reads.
+{% endcomment %}
+<section class="xd-contact section-tb-padding96 bg-light">
+  <div class="container custom-width">
+    <div class="row g-5 align-items-center">
+      <div class="col-lg-6">
+        <div class="section-heading">
+          {%- if section.settings.eyebrow != blank -%}
+            <div class="sub-heading">{{ section.settings.eyebrow }}</div>
+          {%- endif -%}
+          <h3 class="all-heading heading-font text-primary">{{ section.settings.heading }}</h3>
+        </div>
+        {%- if section.settings.intro != blank -%}
+          <div class="xd-contact__intro fs14 text-primary mt-3">{{ section.settings.intro }}</div>
+        {%- endif -%}
+        {%- if page.content != blank -%}
+          <div class="xd-contact__intro xd-rte fs14 text-primary mt-3">{{ page.content }}</div>
+        {%- endif -%}
+
+        {%- if section.blocks.size > 0 -%}
+          <div class="xd-contact__info d-flex flex-column gap-4 mt-5">
+            {%- for block in section.blocks -%}
+              {%- liquid
+                assign value = block.settings.value | strip
+                assign href = blank
+                case block.type
+                  when 'email'
+                    assign icon = 'fa-regular fa-envelope'
+                    if value != blank
+                      assign href = 'mailto:' | append: value
+                    endif
+                  when 'phone'
+                    if value == blank
+                      assign value = shop.phone
+                    endif
+                    assign icon = 'fa-regular fa-phone'
+                    if value != blank
+                      assign href = value | remove: ' ' | remove: '-' | remove: '(' | remove: ')' | prepend: 'tel:'
+                    endif
+                  when 'address'
+                    assign icon = 'fa-regular fa-location-dot'
+                  else
+                    assign icon = block.settings.icon | default: 'fa-regular fa-circle-info'
+                    assign href = block.settings.link
+                endcase
+              -%}
+              {%- if value != blank -%}
+                <div class="contact-info__item" {{ block.shopify_attributes }}>
+                  <div class="contact-info__icon">
+                    <i class="{{ icon }} text-primary" aria-hidden="true"></i>
+                  </div>
+                  <div class="contact-info__content">
+                    <div class="sub-heading mb-1">{{ block.settings.label }}</div>
+                    {%- if href != blank -%}
+                      <a class="fs16 fw500 text-primary" href="{{ href }}">{{ value | escape }}</a>
+                    {%- else -%}
+                      <p class="fs16 fw500 text-primary mb-0">{{ value | escape | newline_to_br }}</p>
+                    {%- endif -%}
+                  </div>
+                </div>
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+
+        {%- liquid
+          assign has_social = false
+          if settings.social_facebook_link != blank or settings.social_twitter_link != blank or settings.social_linkedin_link != blank or settings.social_youtube_link != blank or settings.social_instagram_link != blank
+            assign has_social = true
+          endif
+        -%}
+        {%- if section.settings.show_social and has_social -%}
+          <div class="xd-contact__social mt-5">
+            {%- if section.settings.social_heading != blank -%}
+              <div class="sub-heading mb-3">{{ section.settings.social_heading }}</div>
+            {%- endif -%}
+            <div class="social-handles d-flex flex-wrap">
+              {%- if settings.social_facebook_link != blank -%}
+                <a href="{{ settings.social_facebook_link }}" target="_blank" rel="noopener" aria-label="Facebook"
+                  ><i class="transition fab fa-facebook" aria-hidden="true"></i
+                ></a>
+              {%- endif -%}
+              {%- if settings.social_twitter_link != blank -%}
+                <a href="{{ settings.social_twitter_link }}" target="_blank" rel="noopener" aria-label="X"
+                  ><i class="transition fab fa-x-twitter" aria-hidden="true"></i
+                ></a>
+              {%- endif -%}
+              {%- if settings.social_linkedin_link != blank -%}
+                <a href="{{ settings.social_linkedin_link }}" target="_blank" rel="noopener" aria-label="LinkedIn"
+                  ><i class="transition fab fa-linkedin" aria-hidden="true"></i
+                ></a>
+              {%- endif -%}
+              {%- if settings.social_youtube_link != blank -%}
+                <a href="{{ settings.social_youtube_link }}" target="_blank" rel="noopener" aria-label="YouTube"
+                  ><i class="transition fab fa-youtube" aria-hidden="true"></i
+                ></a>
+              {%- endif -%}
+              {%- if settings.social_instagram_link != blank -%}
+                <a href="{{ settings.social_instagram_link }}" target="_blank" rel="noopener" aria-label="Instagram"
+                  ><i class="transition fab fa-instagram" aria-hidden="true"></i
+                ></a>
+              {%- endif -%}
+            </div>
+          </div>
+        {%- endif -%}
+      </div>
+
+      <div class="col-lg-6">
+        <div class="register-form xd-contact__card">
+          <h4 class="text-center fs30 heading-font mb-5 text-primary fw800">{{ section.settings.form_heading }}</h4>
+          {%- form 'contact', id: 'XdContactForm', class: 'w-100' -%}
+            {%- if form.posted_successfully? -%}
+              <p class="form__message fs14 text-center mb-3">{{ section.settings.success_text }}</p>
+            {%- elsif form.errors -%}
+              <p class="form__message fs14 text-center mb-3 text-drak-crimson-red">
+                {{ form.errors.translated_fields.email | capitalize }}
+                {{ form.errors.messages.email }}
+              </p>
+            {%- endif -%}
+            <div class="form-group mb-3">
+              <input
+                type="text"
+                name="contact[name]"
+                class="form-control"
+                placeholder="{{ section.settings.name_label }}"
+                autocomplete="name"
+                required
+              >
+            </div>
+            <div class="form-group mb-3">
+              <input
+                type="email"
+                name="contact[email]"
+                class="form-control"
+                placeholder="{{ section.settings.email_label }}"
+                autocomplete="email"
+                required
+              >
+            </div>
+            <div class="form-group mb-3">
+              <input
+                type="tel"
+                name="contact[phone]"
+                class="form-control"
+                placeholder="{{ section.settings.phone_label }}"
+                autocomplete="tel"
+              >
+            </div>
+            <div class="form-group mb-3">
+              <textarea
+                name="contact[body]"
+                class="form-control"
+                rows="5"
+                placeholder="{{ section.settings.message_label }}"
+                required
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <button type="submit" class="btn w-100 sm-btn product-card-btn submit-btn btn-primary">
+                <span class="text-center">{{ section.settings.button_label }}</span>
+                <span class="btn-icon"><img src="{{ 'rt-icon.svg' | asset_url }}" alt="" width="10" height="10"></span>
+              </button>
+            </div>
+          {%- endform -%}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "XD Contact",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Get in touch" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "We're Here to Help" },
+    {
+      "type": "richtext",
+      "id": "intro",
+      "label": "Intro",
+      "default": "<p>Questions about an order, a paddle, a warranty claim or a court installation? Send us a message and our team will get back to you.</p>",
+      "info": "Anything typed into the Contact page's own content in the admin is shown below this."
+    },
+    { "type": "header", "content": "Social icons" },
+    {
+      "type": "checkbox",
+      "id": "show_social",
+      "label": "Show social icons",
+      "default": true,
+      "info": "Uses the links in Theme settings > Social media"
+    },
+    { "type": "text", "id": "social_heading", "label": "Social heading", "default": "Follow us on" },
+    { "type": "header", "content": "Form" },
+    { "type": "text", "id": "form_heading", "label": "Form heading", "default": "Send Us a Message" },
+    { "type": "text", "id": "name_label", "label": "Name placeholder", "default": "Name" },
+    { "type": "text", "id": "email_label", "label": "Email placeholder", "default": "Email" },
+    { "type": "text", "id": "phone_label", "label": "Phone placeholder", "default": "Phone No." },
+    { "type": "text", "id": "message_label", "label": "Message placeholder", "default": "Message" },
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "submit" },
+    {
+      "type": "text",
+      "id": "success_text",
+      "label": "Success message",
+      "default": "Thanks for contacting us. We'll get back to you as soon as possible."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "email",
+      "name": "Email",
+      "limit": 1,
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label", "default": "Email" },
+        {
+          "type": "text",
+          "id": "value",
+          "label": "Email address",
+          "info": "Leave blank to use the store email from Settings > Store details"
+        }
+      ]
+    },
+    {
+      "type": "phone",
+      "name": "Phone",
+      "limit": 1,
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label", "default": "Phone" },
+        {
+          "type": "text",
+          "id": "value",
+          "label": "Phone number",
+          "info": "Leave blank to use the store phone from Settings > Store details. Hidden when neither is set."
+        }
+      ]
+    },
+    {
+      "type": "address",
+      "name": "Address",
+      "limit": 1,
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label", "default": "Address" },
+        {
+          "type": "textarea",
+          "id": "value",
+          "label": "Address",
+          "info": "Leave blank to use the store address from Settings > Store details"
+        }
+      ]
+    },
+    {
+      "type": "item",
+      "name": "Contact item",
+      "settings": [
+        { "type": "text", "id": "icon", "label": "Font Awesome icon class", "default": "fa-regular fa-clock" },
+        { "type": "text", "id": "label", "label": "Label", "default": "Support hours" },
+        { "type": "textarea", "id": "value", "label": "Text" },
+        { "type": "url", "id": "link", "label": "Link" }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "XD Contact",
+      "blocks": [{ "type": "email" }, { "type": "phone" }, { "type": "address" }]
+    }
+  ]
+}
+{% endschema %}

@@ -1,26 +1,37 @@
 {% comment %}
   Markup copied verbatim from the supplied listing.html (.all-product section):
-  the collection title plus the row of round paddle-type tiles.
+  the collection title plus the row of paddle-type tiles.
+
+  ---------------------------------------------------------------------------
+  WHICH COLLECTIONS SHOW THE TILES
+
+  The tile row only belongs on the paddles collection, so it is switched on
+  per collection with the `custom.show_paddle_types` metafield (true/false).
+  Every other collection keeps the heading and skips the row.
 
   ---------------------------------------------------------------------------
   WHERE THE TILES COME FROM
 
-  Two sources, in this order:
+  In this order:
 
-    1. The manually configured blocks - the default, and what the design ships:
-       chosen artwork, chosen order. This row is drawn around round category
-       art (pro01..pro05.png) and `.paddles-card--image img` carries no size
-       rule above 767px, so the artwork's own dimensions ARE the layout. Do not
-       state width/height on these images and do not feed them photos of a
-       different shape; both stretch the tile rather than the box.
+    1. The collection's `custom.paddle_type_tiles` metafield - a list of
+       "Paddle type tile" metaobjects (title, image, collection link), edited
+       on the collection in the admin. This is the normal source.
 
     2. A Shopify menu, if one is picked in "Menu": one tile per link, imaged
-       from each linked collection's own image. Only worth using once those
-       collections have artwork of the same shape as the blocks - a collection
-       with no image renders an empty tile, which is the honest failure.
+       from each linked collection's own image.
 
-  A tile linking to the collection you are already on is dropped rather than
-  rendered as a link back to itself.
+    3. The manually configured blocks - the fallback if a collection has the
+       row switched on but no tiles of its own yet.
+
+  The row is drawn around paddle art (pro01..pro05.png) and
+  `.paddles-card--image img` carries no size rule above 767px, so the artwork's
+  own dimensions ARE the layout. Do not state width/height on these images and
+  do not feed them photos of a different shape; both stretch the tile rather
+  than the box.
+
+  A tile linking to the collection you are already on renders as a plain
+  tile (listing.html's own markup is a <div>) rather than a link to itself.
 {% endcomment %}
 {%- comment -%}
   Heading precedence: section setting -> collection metafield -> collection title.
@@ -36,6 +47,13 @@
     assign page_heading = collection.title
   endif
 
+  assign show_tiles = false
+  if collection.metafields.custom.show_paddle_types.value == true
+    assign show_tiles = true
+  endif
+
+  assign metafield_tiles = collection.metafields.custom.paddle_type_tiles.value
+
   assign menu = section.settings.menu
   assign use_menu = false
   if menu != blank and menu.links.size > 0
@@ -45,59 +63,88 @@
 
 <section class="all-product py-5">
   <div class="container custom-width">
-    <div class="text-center mb-5">
-      <h2 class="all-heading text-capitalize text-primary">{{ page_heading }}</h2>
+    {%- comment -%}
+      mb-5 pb-4 is listing.html's gap between the heading and the tiles. With
+      no tiles below, the section's own py-5 is the whole gap to the toolbar.
+    {%- endcomment -%}
+    <div class="text-center{% if show_tiles %} mb-5 pb-4{% endif %}">
+      <h2 class="all-heading text-capitalize heading-font text-primary">{{ page_heading }}</h2>
     </div>
-    <div class="row">
-      {%- if use_menu -%}
-        {%- for link in menu.links -%}
-          {%- liquid
-            # `link.object` is the collection itself for a collection link,
-            # so the tile uses the artwork the merchant set on the collection
-            # and nothing else. Falling back to its first
-            # product's photo puts a tall paddle shot where the design wants
-            # round category art, and .paddles-card--image img is unconstrained
-            # on desktop so nothing downstream would rein it in.
-            assign linked = link.object
-            assign tile_image = blank
-            if link.type == 'collection_link'
-              assign tile_image = linked.image
-            endif
-          -%}
-          {%- unless link.current -%}
+    {%- if show_tiles -%}
+      <div class="row">
+        {%- if metafield_tiles != blank -%}
+          {%- for tile in metafield_tiles -%}
+            {%- liquid
+              assign tile_image = tile.image.value
+              assign tile_link = tile.link.value
+              assign tile_is_link = false
+              if tile_link != blank and tile_link.url != collection.url
+                assign tile_is_link = true
+              endif
+            -%}
             <div class="col">
-              <a class="paddles-card d-block" href="{{ link.url }}">
+              {%- if tile_is_link -%}
+                <a class="paddles-card d-block" href="{{ tile_link.url }}">
+              {%- else -%}
+                <div class="paddles-card">
+              {%- endif -%}
                 <div class="paddles-card--image">
                   {%- if tile_image != blank -%}
-                    {%- comment -%}
-                      Deliberately no width/height: above 767px the only rule
-                      for this image is `position: relative; top: -40px`, so the
-                      artwork's own dimensions are the layout. Stating a height
-                      here stretches the tile.
-                    {%- endcomment -%}
-                    <img src="{{ tile_image | image_url: width: 400 }}" loading="lazy" alt="{{ tile_image.alt | default: link.title | escape }}">
+                    <img src="{{ tile_image | image_url: width: 400 }}" loading="lazy" alt="{{ tile_image.alt | default: tile.title.value | escape }}">
                   {%- endif -%}
                 </div>
-                <h4 class="paddles-card-title">{{ link.title | escape }}</h4>
+                <h4 class="paddles-card-title text-uppercase heading-font">{{ tile.title.value | escape }}</h4>
+              {%- if tile_is_link -%}
+                </a>
+              {%- else -%}
+                </div>
+              {%- endif -%}
+            </div>
+          {%- endfor -%}
+        {%- elsif use_menu -%}
+          {%- for link in menu.links -%}
+            {%- liquid
+              # `link.object` is the collection itself for a collection link,
+              # so the tile uses the artwork the merchant set on the collection
+              # and nothing else. Falling back to its first product's photo puts
+              # a tall paddle shot where the design wants category art, and
+              # .paddles-card--image img is unconstrained on desktop so nothing
+              # downstream would rein it in.
+              assign linked = link.object
+              assign tile_image = blank
+              if link.type == 'collection_link'
+                assign tile_image = linked.image
+              endif
+            -%}
+            {%- unless link.current -%}
+              <div class="col">
+                <a class="paddles-card d-block" href="{{ link.url }}">
+                  <div class="paddles-card--image">
+                    {%- if tile_image != blank -%}
+                      <img src="{{ tile_image | image_url: width: 400 }}" loading="lazy" alt="{{ tile_image.alt | default: link.title | escape }}">
+                    {%- endif -%}
+                  </div>
+                  <h4 class="paddles-card-title text-uppercase heading-font">{{ link.title | escape }}</h4>
+                </a>
+              </div>
+            {%- endunless -%}
+          {%- endfor -%}
+        {%- else -%}
+          {%- for block in section.blocks -%}
+            <div class="col" {{ block.shopify_attributes }}>
+              <a class="paddles-card d-block" href="{{ block.settings.link | default: '#' }}">
+                <div class="paddles-card--image">
+                  {%- if block.settings.image != blank -%}
+                    <img src="{{ block.settings.image | image_url: width: 400 }}" loading="lazy" alt="{{ block.settings.image.alt | escape }}">
+                  {%- endif -%}
+                </div>
+                <h4 class="paddles-card-title text-uppercase heading-font">{{ block.settings.title }}</h4>
               </a>
             </div>
-          {%- endunless -%}
-        {%- endfor -%}
-      {%- else -%}
-        {%- for block in section.blocks -%}
-          <div class="col" {{ block.shopify_attributes }}>
-            <a class="paddles-card d-block" href="{{ block.settings.link | default: '#' }}">
-              <div class="paddles-card--image">
-                {%- if block.settings.image != blank -%}
-                  <img src="{{ block.settings.image | image_url: width: 400 }}" loading="lazy" alt="{{ block.settings.image.alt | escape }}">
-                {%- endif -%}
-              </div>
-              <h4 class="paddles-card-title">{{ block.settings.title }}</h4>
-            </a>
-          </div>
-        {%- endfor -%}
-      {%- endif -%}
-    </div>
+          {%- endfor -%}
+        {%- endif -%}
+      </div>
+    {%- endif -%}
   </div>
 </section>
 
@@ -105,6 +152,10 @@
 {
   "name": "XD Collection categories",
   "settings": [
+    {
+      "type": "paragraph",
+      "content": "The tile row shows only on collections whose \"Show paddle-type tiles\" metafield is on. Tiles come from that collection's \"Paddle-type tiles\" metafield; the menu or blocks below are used only when it is empty."
+    },
     {
       "type": "text",
       "id": "heading",
@@ -115,7 +166,7 @@
       "type": "link_list",
       "id": "menu",
       "label": "Menu",
-      "info": "One tile per link, using each linked collection's own image. Leave empty to use the blocks below instead."
+      "info": "Fallback: one tile per link, using each linked collection's own image. Leave empty to use the blocks below instead."
     }
   ],
   "blocks": [

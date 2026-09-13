@@ -218,13 +218,13 @@ body.gradient {
   color: #231f20;
 }
 
-#xd-pane-t4 .metafield-rich_text_field h4, #xd-pane-t5 .metafield-rich_text_field h4 {
+.xd-pane--shipping-returns .metafield-rich_text_field h4, .xd-pane--warranty .metafield-rich_text_field h4 {
   border-top: solid 1px #00000020;
   padding-top: 15px;
   margin-top: 15px;
 }
 
-#xd-pane-t4 .metafield-rich_text_field h4:first-of-type, #xd-pane-t5 .metafield-rich_text_field h4:first-of-type,#xd-pane-t5 .metafield-rich_text_field h4:nth-of-type(2) {
+.xd-pane--shipping-returns .metafield-rich_text_field h4:first-of-type, .xd-pane--warranty .metafield-rich_text_field h4:first-of-type, .xd-pane--warranty .metafield-rich_text_field h4:nth-of-type(2) {
   border: none;
   padding-top: 0;
   margin-top: 0;
@@ -412,7 +412,8 @@ body.gradient {
   color: #d50032;
 }
 
-.filter-box .form-check-input:disabled+.filter-link {
+.filter-box .form-check-input:disabled+.filter-link,
+.filter-box .accordion-item .accordion-body ul li a.filter-link.is-disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -614,4 +615,210 @@ body.gradient {
 .xd-filter-toggle__count[hidden],
 .filter-box .accordion-button .xd-facet-group-count[hidden] {
   display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Carried over from the previous xd-main.css copy
+
+   xd-main.css is again a verbatim copy of the current css/main.css. The old
+   copy had drifted from the design (tab bar width, option widths, cart button
+   width, colours...), and that drift is gone. These few edits in it were
+   needed for real store data rather than being design changes, so they live
+   here now.
+--------------------------------------------------------------------------- */
+
+/* Products have images of any shape. The design's main box is 624 x 589
+   around its one hero shot, so the ratio is pinned instead of following the
+   image. */
+.rug-gallery__main {
+  aspect-ratio: 624 / 589;
+  height: auto;
+  width: 100%;
+  min-height: unset;
+  max-height: unset;
+  display: flex;
+}
+
+/* A product can have more thumbs than fit; the strip scrolls without a bar. */
+.fbf-gallery__thumbs {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.fbf-gallery__thumbs::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Tab bodies are admin rich text, so they cannot carry product.html's utility
+   classes: the Details & Care heading is .mb-4, the Shipping & Returns ones
+   .fs20.fw600. Each pane carries xd-pane--<tab label> (xd-product-tabs). */
+.xd-pane--details-care h4 {
+  margin-bottom: 1.5rem !important;
+}
+
+.xd-pane--shipping-returns h4 {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+}
+
+/* Policy and page bodies are admin rich text, so their headings cannot carry
+   privacy-policy.html's .heading-font.text-primary.mb-3.fw700. */
+.privacy-policy-section .xd-rte h4 {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  color: #231f20;
+  margin-bottom: 1rem;
+}
+
+/*
+  Register form consent checkbox. Same trap as the filter sidebar above:
+  Dawn's input[type='checkbox'] { width: auto } outranks Bootstrap's
+  .form-check-input size, collapsing the box to a 2px sliver. The label keeps
+  main.css's .form-check-label styling; only the box is restored.
+*/
+.register-form .form-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding-left: 0;
+  min-height: 0;
+}
+
+.register-form .form-check .form-check-input[type='checkbox'] {
+  flex: 0 0 auto;
+  float: none;
+  width: 18px;
+  height: 18px;
+  margin: 0.2em 0 0;
+  border: 1px solid #cfcfcf;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.register-form .form-check .form-check-input[type='checkbox']:checked {
+  background-color: #d50032;
+  border-color: #d50032;
+}
+
+.register-form .form-check .form-check-input[type='checkbox']:focus {
+  border-color: #d50032;
+  box-shadow: 0 0 0 3px rgba(213, 0, 50, 0.15);
+}
+
+.register-form .form-check .form-check-label {
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------------------
+   Contact page (sections/xd-contact.liquid)
+
+   The design has no contact page. The card below is the design's own
+   `.register-container .register-form` card, value for value, minus the
+   register page's side-image positioning - and minus its mobile -36px pull-up,
+   which there tucks the card under that image and here would overlap the
+   column above.
+--------------------------------------------------------------------------- */
+.xd-contact__card {
+  min-height: 560px;
+  margin-left: auto;
+  margin-right: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+  text-align: left;
+  border: solid 2px rgb(213 212 212 / 30%);
+  background-color: #ffffff;
+  padding: 40px 30px;
+  border-radius: 12px;
+}
+
+/* The one element the design has no pattern for. .form-control is a fixed
+   56px pill; a message box needs height, so it keeps the fill, border and
+   type and trades the pill for a softer radius. */
+.xd-contact__card textarea.form-control {
+  height: auto;
+  min-height: 140px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  border-radius: 24px;
+  resize: vertical;
+}
+
+.xd-contact__intro p:last-child {
+  margin-bottom: 0;
+}
+
+/* The card's align-items: flex-start shrinks the heading to its text, so a
+   short heading ignored its .text-center. The register heading wraps across
+   the card, which is why it looks centred there. */
+.xd-contact__card > h4 {
+  align-self: stretch;
+}
+
+/* Same mobile card treatment as the register form, without the pull-up. */
+@media (max-width: 767.98px) {
+  .xd-contact__card {
+    min-height: 0;
+    padding: var(--xd-sp-4, 24px) 18px;
+    border-radius: 18px;
+  }
+
+  .xd-contact__card .fs30 {
+    margin-bottom: var(--xd-sp-4, 24px) !important;
+    font-size: var(--xd-fs-h4, 22px);
+    line-height: 1.25;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   FAQ page accordion - light variant
+
+   The design's dark bars (main.css .fbf-accordion) are drawn for the photo
+   background of the "Common Questions" band on About / Contact
+   (.faqs-section) and stay as they are there. On the plain FAQ page
+   (.faq-wrapper) a stack of black bars reads too heavy, so the items are
+   white with a thin border - the design's own product-card border - dark
+   question text, and the brand red kept for the open question and its
+   chevron.
+--------------------------------------------------------------------------- */
+.faq-wrapper .fbf-accordion {
+  --bs-accordion-btn-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23231F20' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M2 5L8 11L14 5'/%3e%3c/svg%3e");
+  --bs-accordion-btn-active-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23D50032' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M2 5L8 11L14 5'/%3e%3c/svg%3e");
+}
+
+.faq-wrapper .fbf-accordion .accordion-item {
+  background-color: #ffffff;
+  border: 1px solid rgb(35 31 32 / 14%);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.faq-wrapper .fbf-accordion .accordion-button {
+  background-color: #ffffff;
+  color: #231f20;
+}
+
+.faq-wrapper .fbf-accordion .accordion-button:not(.collapsed) {
+  background-color: #ffffff;
+  color: #d50032;
+}
+
+.faq-wrapper .fbf-accordion .accordion-button::after {
+  filter: none;
+}
+
+.faq-wrapper .fbf-accordion .accordion-body {
+  padding: 0 24px 20px;
+  background-color: #ffffff;
+  color: #534d4d;
+}
+
+/* xd-responsive.css pads the answer 2px 16px 16px on phones; the selector
+   above is more specific, so the phone value is restated for this variant. */
+@media (max-width: 767.98px) {
+  .faq-wrapper .fbf-accordion .accordion-body {
+    padding: 2px 16px 16px;
+  }
 }

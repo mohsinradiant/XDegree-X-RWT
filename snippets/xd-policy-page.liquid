@@ -1,0 +1,50 @@
+{% comment %}
+  The supplied privacy-policy.html layout, for Shopify's native /policies/*
+  pages.
+
+  Shopify renders those pages itself - fixed .shopify-policy__* markup, no
+  template, no sections - so theme.liquid renders this in their place. The
+  markup matches sections/xd-page-content.liquid; the body is the shop's own
+  policy text, so it is still edited under Settings > Policies.
+
+  The trust bar is the one every other design page ends with. A policy page
+  cannot hold a section, so its four items are restated here with the same
+  copy and icons as the xd-trust-bar blocks in the page templates.
+
+  Accepts:
+    policy - {Object} the shop policy for the current URL
+{% endcomment %}
+<section class="privacy-policy-section my-5">
+  <div class="container custom-width">
+    <div class="section-heading text-center">
+      <div class="sub-heading">{{ shop.name }}</div>
+      <h4 class="all-heading heading-font text-primary">{{ policy.title }}</h4>
+    </div>
+    <div class="row">
+      <div class="col-md-8 mx-auto">
+        <div class="bg-light rounded-3 px-4 py-5 text-primary xd-rte">{{ policy.body }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{%- liquid
+  assign trust_icons = 'icon04.png|icon05.png|icon06.png|icon07.png' | split: '|'
+  assign trust_labels = 'Tournament Grade Quality|Global Shipping|Professional Court Solutions|Premium Player Support' | split: '|'
+  assign trust_descs = 'Built for competitive performance and durability.|Fast and secure worldwide product delivery.|Indoor and outdoor court systems for all facilities.|Expert assistance for players, clubs and institutions.' | split: '|'
+-%}
+<section class="trust-bar">
+  <div class="container">
+    <div class="row g-3 text-center text-md-start">
+      {%- for label in trust_labels -%}
+        <div class="col-6 col-md-3 d-flex align-items-center gap-3">
+          <img src="{{ trust_icons[forloop.index0] | file_url }}" alt="" loading="lazy">
+          <div>
+            <p class="trust-bar__label{% if forloop.first %} heading-font{% endif %} mb-0">{{ label }}</p>
+            <p class="trust-bar__desc">{{ trust_descs[forloop.index0] }}</p>
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
