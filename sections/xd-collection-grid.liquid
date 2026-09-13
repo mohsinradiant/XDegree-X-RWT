@@ -17,8 +17,13 @@
     swatch  -> presentation swatch/image, or named in
                "Swatch-style filter groups"            (Colors)
     rating  -> the group named in "Rating tag prefix"   (star rows)
+    link    -> named in "Link-style filter groups"      (Category: link rows
+                                                        with a count)
     else    -> checkbox list                           (Material, Level,
                                                         Style, Weight)
+
+  Group order, names ("Level" -> "Player Level"), hidden groups and value order
+  follow listing.html through section settings - see the loop below.
 
   ---------------------------------------------------------------------------
   MULTI-SELECT, AND WHY THE GROUPS COME FROM TAGS
@@ -279,26 +284,56 @@
                   automatic collections are built on) is not a filter group and
                   is dropped unless "Show unprefixed tags" is on.
                 {%- endcomment -%}
-                {%- assign group_index = 0 -%}
-                {%- for filter in collection.filters -%}
-                  {%- liquid
-                    assign label_key = filter.label | downcase | strip
-                    assign presentation = filter.presentation | default: 'text'
+                {%- liquid
+                  # GROUP ORDER, NAMES AND VISIBILITY
+                  #
+                  # listing.html runs Prices, Category, Player Level, Playing Style,
+                  # Material, Weight, Colors, Rating. Search & Discovery returns its
+                  # filters in its own order (Colors before the tag filter), and
+                  # the tag groups are named by their prefix ("Level", "Style").
+                  # So every group is first described as
+                  #
+                  #     kind ~ filter index ~ tag prefix ~ display name
+                  #
+                  # then emitted in "Filter group order". Groups not named there
+                  # follow in Shopify's order, so a filter enabled in the app later
+                  # still appears with no theme edit; "Hidden filter groups" leaves
+                  # out the ones the design has no place for.
+                  assign rating_group = section.settings.rating_group | strip
+                  assign label_pairs = section.settings.filter_group_labels | split: ','
 
+                  assign hidden_raw = section.settings.hidden_filter_groups | downcase | split: ','
+                  assign hidden_blob = ''
+                  for hidden_key in hidden_raw
+                    assign hidden_clean = hidden_key | strip
+                    if hidden_clean != blank
+                      assign hidden_blob = hidden_blob | append: hidden_clean | append: '|'
+                    endif
+                  endfor
+                  assign hidden_keys = hidden_blob | split: '|'
+
+                  assign order_raw = section.settings.filter_group_order | downcase | split: ','
+                  assign order_blob = ''
+                  for order_key in order_raw
+                    assign order_clean = order_key | strip
+                    if order_clean != blank
+                      assign order_blob = order_blob | append: order_clean | append: '|'
+                    endif
+                  endfor
+                  assign order_keys = order_blob | split: '|'
+
+                  assign group_blob = ''
+                  for filter in collection.filters
+                    assign filter_index = forloop.index0
                     assign is_tag_filter = false
                     if filter.param_name contains 'filter.p.tag'
                       assign is_tag_filter = true
                     endif
-                  -%}
 
-                  {%- if is_tag_filter and section.settings.split_tag_filter -%}
-                    {%- liquid
-                      # Distinct prefixes, in the order the values arrive.
-                      # Liquid cannot build a set, so they are collected into a
-                      # delimited string and uniq'd. "|" cannot appear in a
-                      # prefix - it is not legal in the part of a tag before the
-                      # colon here by convention, and a stray one would only
-                      # split one group in two.
+                    if is_tag_filter and section.settings.split_tag_filter
+                      # Distinct prefixes, in the order the values arrive. A tag
+                      # with no prefix (Pro Series, Tournament, the tags the
+                      # automatic collections are built on) is not a group.
                       capture prefix_blob
                         for value in filter.values
                           if value.label contains ': '
@@ -308,115 +343,132 @@
                         endfor
                       endcapture
                       assign found_prefixes = prefix_blob | split: '|' | uniq
-
-                      # The merchant's running order wins; anything they did not
-                      # name follows in the order Shopify sent it, so a new
-                      # prefix appears without a theme edit.
-                      assign wanted = section.settings.tag_group_order | replace: ', ', ',' | replace: ' ,', ',' | split: ','
-                      capture ordered_blob
-                        for want in wanted
-                          if found_prefixes contains want
-                            echo want
-                            echo '|'
+                      for prefix in found_prefixes
+                        assign display_name = prefix
+                        assign prefix_key = prefix | downcase | strip
+                        for pair in label_pairs
+                          if pair contains '='
+                            assign pair_from = pair | split: '=' | first | downcase | strip
+                            if pair_from == prefix_key
+                              assign display_name = pair | split: '=' | last | strip
+                            endif
                           endif
                         endfor
-                        for found in found_prefixes
-                          unless wanted contains found
-                            echo found
-                            echo '|'
-                          endunless
-                        endfor
-                      endcapture
-                      assign ordered_prefixes = ordered_blob | split: '|'
-
-                      assign rating_group = section.settings.rating_group | strip
-                    -%}
-
-                    {%- for prefix in ordered_prefixes -%}
-                      {%- liquid
-                        assign group_index = group_index | plus: 1
-                        assign panel_id = 'facet-' | append: group_index
-
-                        assign prefix_key = prefix | downcase | strip
-
-                        assign style = 'checkbox'
-                        if prefix == rating_group
-                          assign style = 'rating'
-                        elsif swatch_labels contains prefix_key
-                          assign style = 'swatch'
+                        assign group_blob = group_blob | append: 'tag~' | append: filter_index | append: '~' | append: prefix | append: '~' | append: display_name | append: '|'
+                      endfor
+                      if section.settings.show_unprefixed_tags
+                        assign group_blob = group_blob | append: 'untagged~' | append: filter_index | append: '~~' | append: filter.label | append: '|'
+                      endif
+                    else
+                      assign display_name = filter.label
+                      assign filter_key = filter.label | downcase | strip
+                      for pair in label_pairs
+                        if pair contains '='
+                          assign pair_from = pair | split: '=' | first | downcase | strip
+                          if pair_from == filter_key
+                            assign display_name = pair | split: '=' | last | strip
+                          endif
                         endif
+                      endfor
+                      assign group_blob = group_blob | append: 'filter~' | append: filter_index | append: '~~' | append: display_name | append: '|'
+                    endif
+                  endfor
+                  assign all_groups = group_blob | split: '|'
 
-                        assign show_count = section.settings.show_counts
-                        if link_labels contains prefix_key
-                          assign show_count = true
-                        endif
-                      -%}
-                      {%- render 'xd-facet-group',
-                        filter: filter,
-                        prefix: prefix,
-                        group_label: prefix,
-                        style: style,
-                        panel_id: panel_id,
-                        show_count: show_count,
-                        rating_suffix: section.settings.rating_suffix,
-                        design_colours: design_colours
-                      -%}
-                    {%- endfor -%}
+                  assign ordered_blob = ''
+                  for order_key in order_keys
+                    for group in all_groups
+                      assign group_key = group | split: '~' | last | downcase | strip
+                      if group_key == order_key
+                        assign ordered_blob = ordered_blob | append: group | append: '|'
+                      endif
+                    endfor
+                  endfor
+                  for group in all_groups
+                    assign group_key = group | split: '~' | last | downcase | strip
+                    unless order_keys contains group_key
+                      assign ordered_blob = ordered_blob | append: group | append: '|'
+                    endunless
+                  endfor
+                  assign ordered_groups = ordered_blob | split: '|'
+                  assign rendered_groups = 0
+                -%}
 
-                    {%- if section.settings.show_unprefixed_tags -%}
-                      {%- liquid
-                        assign group_index = group_index | plus: 1
-                        assign panel_id = 'facet-' | append: group_index
-                      -%}
-                      {%- render 'xd-facet-group',
-                        filter: filter,
-                        prefix: '',
-                        group_label: filter.label,
-                        style: 'checkbox',
-                        panel_id: panel_id,
-                        show_count: section.settings.show_counts,
-                        rating_suffix: section.settings.rating_suffix,
-                        design_colours: design_colours
-                      -%}
-                    {%- endif -%}
+                {%- for group in ordered_groups -%}
+                  {%- liquid
+                    assign group_parts = group | split: '~'
+                    assign group_kind = group_parts[0]
+                    assign filter_index = group_parts[1] | plus: 0
+                    assign filter = collection.filters[filter_index]
+                    assign prefix = group_parts[2] | default: ''
+                    assign group_label = group_parts[3]
 
-                  {%- else -%}
-                    {%- liquid
-                      assign group_index = group_index | plus: 1
-                      assign panel_id = 'facet-' | append: group_index
+                    assign group_key = group_label | downcase | strip
+                    assign prefix_key = prefix | downcase | strip
+                    assign label_key = filter.label | downcase | strip
 
-                      assign style = 'checkbox'
+                    assign is_hidden = false
+                    if hidden_keys contains group_key
+                      assign is_hidden = true
+                    endif
+                    if prefix != blank and hidden_keys contains prefix_key
+                      assign is_hidden = true
+                    endif
+
+                    assign style = 'checkbox'
+                    if group_kind == 'tag'
+                      if prefix == rating_group
+                        assign style = 'rating'
+                      elsif swatch_labels contains prefix_key or swatch_labels contains group_key
+                        assign style = 'swatch'
+                      elsif link_labels contains prefix_key or link_labels contains group_key
+                        assign style = 'link'
+                      endif
+                    elsif group_kind == 'filter'
+                      assign presentation = filter.presentation | default: 'text'
                       if filter.type == 'price_range'
                         assign style = 'price'
-                      elsif presentation == 'swatch' or presentation == 'image' or swatch_labels contains label_key
+                      elsif presentation == 'swatch' or presentation == 'image'
+                        assign style = 'swatch'
+                      elsif swatch_labels contains label_key or swatch_labels contains group_key
                         assign style = 'swatch'
                       elsif filter.param_name contains 'rating'
                         assign style = 'rating'
+                      elsif link_labels contains label_key or link_labels contains group_key
+                        assign style = 'link'
                       endif
+                    endif
 
-                      assign show_count = section.settings.show_counts
-                      if link_labels contains label_key
-                        assign show_count = true
-                      endif
-                    -%}
+                    assign show_count = section.settings.show_counts
+                    if style == 'link'
+                      assign show_count = true
+                    endif
+
+                    assign panel_id = 'facet-' | append: forloop.index
+                  -%}
+                  {%- unless is_hidden -%}
+                    {%- assign rendered_groups = rendered_groups | plus: 1 -%}
                     {%- render 'xd-facet-group',
                       filter: filter,
-                      prefix: '',
-                      group_label: filter.label,
+                      prefix: prefix,
+                      group_label: group_label,
                       style: style,
                       panel_id: panel_id,
                       show_count: show_count,
                       rating_suffix: section.settings.rating_suffix,
-                      design_colours: design_colours
+                      design_colours: design_colours,
+                      value_order: section.settings.filter_value_order
                     -%}
-                  {%- endif -%}
-                {%- else -%}
+                  {%- endunless -%}
+                {%- endfor -%}
+
+                {%- if rendered_groups == 0 -%}
                   <div class="accordion-item">
                     <div class="accordion-body ps-3">
                       <p class="filter-link mb-0">{{ section.settings.no_filters_text }}</p>
                     </div>
                   </div>
-                {%- endfor -%}
+                {%- endif -%}
                 </div>
               </div>
               {%- comment -%}
@@ -620,6 +672,24 @@
       return input.name + '\u0000' + input.value;
     }
 
+    // A row's visible state is drawn by the element around its checkbox, not
+    // the checkbox itself: the rating rows are labels wrapping a hidden box,
+    // the link-style rows an <a> beside one. Called wherever a box changes.
+    function syncRow(input) {
+      var star = input.closest('.review-star');
+      if (star) star.classList.toggle('is-active', input.checked);
+
+      var row = input.closest('.xd-facet-link-row');
+      var link = row ? row.querySelector('[data-xd-facet-link]') : null;
+      if (link) {
+        link.classList.toggle('is-active', input.checked);
+        link.classList.toggle('is-disabled', input.disabled);
+        link.setAttribute('aria-checked', input.checked ? 'true' : 'false');
+        if (input.disabled) link.setAttribute('aria-disabled', 'true');
+        else link.removeAttribute('aria-disabled');
+      }
+    }
+
     function syncCountsFrom(doc) {
       if (!filterBox || !doc) return;
       var fresh = doc.getElementById('XdFilterBox');
@@ -640,14 +710,16 @@
         // out an unticked one.
         if (!fact) {
           if (!input.checked) input.disabled = true;
+          syncRow(input);
           return;
         }
         input.dataset.xdCount = fact.count;
         // Never disable what the shopper has ticked - that would trap them
         // with no way to untick it.
         input.disabled = input.checked ? false : fact.disabled;
+        syncRow(input);
 
-        var row = input.closest('.form-check, .color-option, .review-star');
+        var row = input.closest('.form-check, .color-option, .review-star, .xd-facet-link-row');
         var text = row ? row.querySelector('[data-xd-count-text]') : null;
         if (text) text.textContent = fact.count;
       });
@@ -791,10 +863,9 @@
       }
 
       if (target.hasAttribute('data-xd-facet-input')) {
-        // The rating rows are labels wrapping a hidden checkbox, so their
-        // active styling has to be driven here rather than by CSS.
-        var star = target.closest('.review-star');
-        if (star) star.classList.toggle('is-active', target.checked);
+        // Rating and link rows style themselves off the element around the
+        // checkbox, so their active look has to be driven here, not by CSS.
+        syncRow(target);
         apply(false);
         return;
       }
@@ -804,6 +875,18 @@
     });
 
     scope.addEventListener('click', function (event) {
+      // Link-style row (Category): toggle the hidden checkbox it fronts and
+      // let the change handler take it from there, like any other box.
+      var facetLink = event.target.closest('[data-xd-facet-link]');
+      if (facetLink) {
+        event.preventDefault();
+        var box = document.getElementById(facetLink.getAttribute('data-xd-facet-link'));
+        if (!box || box.disabled) return;
+        box.checked = !box.checked;
+        box.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+
       // Chip: untick the box it stands for.
       var chip = event.target.closest('[data-xd-uncheck]');
       if (chip) {
@@ -814,8 +897,7 @@
           filterBox.querySelectorAll('[data-xd-facet-input]').forEach(function (input) {
             if (input.name === name && input.value === value) {
               input.checked = false;
-              var star = input.closest('.review-star');
-              if (star) star.classList.remove('is-active');
+              syncRow(input);
             }
           });
         }
@@ -837,8 +919,7 @@
           filterBox.querySelectorAll('[data-xd-facet-input]').forEach(function (input) {
             input.checked = false;
             input.disabled = false;
-            var star = input.closest('.review-star');
-            if (star) star.classList.remove('is-active');
+            syncRow(input);
           });
         }
         resetPrice();
@@ -855,6 +936,15 @@
         request(pageLink.getAttribute('href'), true);
         if (results) results.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+    });
+
+    // role="checkbox" promises Space toggles it; a link only answers Enter.
+    scope.addEventListener('keydown', function (event) {
+      if (event.key !== ' ') return;
+      var facetLink = event.target.closest('[data-xd-facet-link]');
+      if (!facetLink) return;
+      event.preventDefault();
+      facetLink.click();
     });
 
     // With JavaScript on, the drawer's Apply button has nothing left to submit
@@ -961,11 +1051,36 @@
       "info": "Renders one accordion group per tag prefix, with the prefix stripped off each label"
     },
     {
+      "type": "header",
+      "content": "Sidebar order"
+    },
+    {
       "type": "text",
-      "id": "tag_group_order",
-      "label": "Tag group order",
-      "default": "Material, Level, Style, Weight, Rating, Series",
-      "info": "Comma-separated prefixes, in the order they should appear. A prefix not named here follows in Shopify's own order."
+      "id": "filter_group_order",
+      "label": "Filter group order",
+      "default": "Prices, Category, Player Level, Playing Style, Material, Weight, Colors, Rating",
+      "info": "Comma-separated group names as shown in the sidebar. Groups not named here follow in Shopify's own order."
+    },
+    {
+      "type": "text",
+      "id": "filter_group_labels",
+      "label": "Group names",
+      "default": "Level=Player Level, Style=Playing Style",
+      "info": "Comma-separated Original=Shown pairs. Works for tag prefixes and Search & Discovery filter names."
+    },
+    {
+      "type": "text",
+      "id": "hidden_filter_groups",
+      "label": "Hidden filter groups",
+      "default": "Series",
+      "info": "Comma-separated group names or tag prefixes to leave out of the sidebar. The filter itself keeps working in Search & Discovery."
+    },
+    {
+      "type": "textarea",
+      "id": "filter_value_order",
+      "label": "Filter value order",
+      "default": "Paddles, Balls, Nets, Bags, Beginner, Intermediate, Advanced, Professional, Power, Control, Spin, All Around, Carbon Fiber, Graphite, Fiberglass, Lightweight, Midweight, Heavyweight",
+      "info": "Comma-separated value names. Within each group, named values come first in this order; the rest follow in Shopify's order."
     },
     {
       "type": "text",
@@ -984,9 +1099,9 @@
     {
       "type": "text",
       "id": "link_style_filters",
-      "label": "Always-show-count filter groups",
+      "label": "Link-style filter groups",
       "default": "Product Type, Category",
-      "info": "Comma-separated filter names whose result counts are always shown. Both spellings of the product-type group are listed so renaming its label in Search & Discovery does not silently drop its counts."
+      "info": "Comma-separated filter names drawn as link rows with a result count, like the design's Category group. They stay multi-select. Both spellings of the product-type group are listed so renaming its label in Search & Discovery does not silently change its style."
     },
     {
       "type": "text",
