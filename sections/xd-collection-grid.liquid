@@ -6,7 +6,8 @@
     - sort dropdown  -> collection.sort_options
     - sidebar        -> collection.filters (Search & Discovery app)
     - price slider   -> the price_range filter's min/max params
-    - grid           -> paginated collection.products
+    - grid           -> paginated collection.products; the next page loads
+                        by AJAX when the shopper scrolls to the end
 
   Every filter group in the design is rendered from whatever Search & Discovery
   returns - nothing is hard-coded - so adding or reordering a filter in the app
@@ -507,7 +508,7 @@
               and nothing that holds state does.
             {%- endcomment -%}
             <div id="XdFacetResults" data-xd-results data-product-count="{{ collection.products_count }}">
-              <div class="row g-4 bestsellers-slider">
+              <div class="row g-4 bestsellers-slider" data-xd-grid>
                 {%- for product in collection.products -%}
                   {%- comment -%}
                     col-6 below 768px. A single full-width card per row turns six
@@ -516,8 +517,10 @@
                     this site.
                   {%- endcomment -%}
                   <div class="col-6 col-md-4">
+                    {%- comment -%} Unique across appended pages, so card form ids never repeat. {%- endcomment -%}
+                    {%- assign card_uid = paginate.current_offset | plus: forloop.index -%}
                     {%- render 'xd-product-card',
-                      card_uid: forloop.index,
+                      card_uid: card_uid,
                       product: product,
                       style: 'bestsellers',
                       card_layout: 'listing',
@@ -533,24 +536,37 @@
                 {%- endfor -%}
               </div>
 
+              {%- comment -%}
+                Infinite scroll: when this sentinel comes into view the script
+                below fetches data-next-url and appends its cards. The links in
+                <noscript> keep every page reachable without JavaScript.
+              {%- endcomment -%}
+              {%- if paginate.next -%}
+                <div class="xd-infinite" data-xd-infinite data-next-url="{{ paginate.next.url }}" aria-live="polite">
+                  <span class="xd-infinite__spinner" aria-hidden="true"></span>
+                  <span class="visually-hidden">{{ 'accessibility.loading' | t }}</span>
+                </div>
+              {%- endif -%}
               {%- if paginate.pages > 1 -%}
-                <nav class="xd-pager d-flex justify-content-center gap-2 mt-5">
-                  {%- if paginate.previous -%}
-                    <a class="xd-pager__link" href="{{ paginate.previous.url }}" aria-label="{{ section.settings.prev_label | escape }}">{{ section.settings.prev_label }}</a>
-                  {%- endif -%}
-                  {%- for part in paginate.parts -%}
-                    {%- if part.is_link -%}
-                      <a class="xd-pager__link" href="{{ part.url }}">{{ part.title }}</a>
-                    {%- elsif part.title == paginate.current_page -%}
-                      <span class="xd-pager__link is-active" aria-current="page">{{ part.title }}</span>
-                    {%- else -%}
-                      <span class="xd-pager__link">{{ part.title }}</span>
+                <noscript>
+                  <nav class="xd-pager d-flex justify-content-center gap-2 mt-5">
+                    {%- if paginate.previous -%}
+                      <a class="xd-pager__link" href="{{ paginate.previous.url }}" aria-label="{{ section.settings.prev_label | escape }}">{{ section.settings.prev_label }}</a>
                     {%- endif -%}
-                  {%- endfor -%}
-                  {%- if paginate.next -%}
-                    <a class="xd-pager__link" href="{{ paginate.next.url }}" aria-label="{{ section.settings.next_label | escape }}">{{ section.settings.next_label }}</a>
-                  {%- endif -%}
-                </nav>
+                    {%- for part in paginate.parts -%}
+                      {%- if part.is_link -%}
+                        <a class="xd-pager__link" href="{{ part.url }}">{{ part.title }}</a>
+                      {%- elsif part.title == paginate.current_page -%}
+                        <span class="xd-pager__link is-active" aria-current="page">{{ part.title }}</span>
+                      {%- else -%}
+                        <span class="xd-pager__link">{{ part.title }}</span>
+                      {%- endif -%}
+                    {%- endfor -%}
+                    {%- if paginate.next -%}
+                      <a class="xd-pager__link" href="{{ paginate.next.url }}" aria-label="{{ section.settings.next_label | escape }}">{{ section.settings.next_label }}</a>
+                    {%- endif -%}
+                  </nav>
+                </noscript>
               {%- endif -%}
             </div>
           </div>
@@ -786,7 +802,9 @@
 
           var freshResults = doc.getElementById('XdFacetResults');
           if (freshResults && results) {
+            stopInfinite();
             results.innerHTML = freshResults.innerHTML;
+            startInfinite();
             results.dataset.productCount = freshResults.dataset.productCount || '0';
             syncResultCount(Number(freshResults.dataset.productCount));
           }
@@ -848,6 +866,88 @@
       if (!panel || !drawer.matches || !window.bootstrap) return;
       var instance = window.bootstrap.Offcanvas.getInstance(panel);
       if (instance) instance.hide();
+    }
+
+    /* ---------------------------------------------------------------------
+       Infinite scroll
+
+       The grid ends in a [data-xd-infinite] sentinel carrying the next page's
+       URL (filters and sort included). When it nears the viewport that page
+       is fetched as just this section, its cards are appended and its own
+       sentinel - or none, on the last page - takes the old one's place. The
+       URL is left alone: a reload starts from the top of the current filters.
+       --------------------------------------------------------------------- */
+
+    var infiniteObserver = null;
+    var infiniteRequest = null;
+
+    function stopInfinite() {
+      if (infiniteObserver) infiniteObserver.disconnect();
+      infiniteObserver = null;
+      if (infiniteRequest) infiniteRequest.abort();
+      infiniteRequest = null;
+    }
+
+    function loadNextPage(sentinel) {
+      var url = sentinel.getAttribute('data-next-url');
+      if (!url || infiniteRequest) return;
+      var grid = results && results.querySelector('[data-xd-grid]');
+      if (!grid) return;
+
+      var controller = new AbortController();
+      infiniteRequest = controller;
+      sentinel.classList.add('is-loading');
+      if (infiniteObserver) infiniteObserver.unobserve(sentinel);
+
+      fetch(url + (url.indexOf('?') === -1 ? '?' : '&') + 'section_id=' + sectionId, { signal: controller.signal })
+        .then(function (response) {
+          if (!response.ok) throw new Error(response.status);
+          return response.text();
+        })
+        .then(function (html) {
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+          var freshGrid = doc.querySelector('[data-xd-grid]');
+          if (freshGrid) {
+            Array.prototype.slice.call(freshGrid.children).forEach(function (col) {
+              grid.appendChild(document.importNode(col, true));
+            });
+          }
+          var next = doc.querySelector('[data-xd-infinite]');
+          if (next) {
+            sentinel.setAttribute('data-next-url', next.getAttribute('data-next-url'));
+            sentinel.classList.remove('is-loading');
+            infiniteRequest = null;
+            if (infiniteObserver) infiniteObserver.observe(sentinel);
+          } else {
+            sentinel.remove();
+            infiniteRequest = null;
+          }
+        })
+        .catch(function (error) {
+          if (infiniteRequest === controller) infiniteRequest = null;
+          if (error.name === 'AbortError') return;
+          // Leave a plain link to the page that failed rather than a spinner
+          // that never ends.
+          sentinel.classList.remove('is-loading');
+          sentinel.innerHTML = '<a class="xd-pager__link xd-infinite__retry" href="' + url + '">{{ section.settings.next_label | escape }}</a>';
+        });
+    }
+
+    function startInfinite() {
+      var sentinel = results && results.querySelector('[data-xd-infinite]');
+      if (!sentinel) return;
+      if (!('IntersectionObserver' in window)) {
+        sentinel.innerHTML = '<a class="xd-pager__link xd-infinite__retry" href="' + sentinel.getAttribute('data-next-url') + '">{{ section.settings.next_label | escape }}</a>';
+        return;
+      }
+      // Start loading well before the last row is on screen, so a steady
+      // scroll rarely reaches the spinner.
+      infiniteObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) loadNextPage(entry.target);
+        });
+      }, { rootMargin: '0px 0px 800px 0px' });
+      infiniteObserver.observe(sentinel);
     }
 
     /* ---------------------------------------------------------------------
@@ -936,14 +1036,6 @@
         return;
       }
 
-      // Pagination stays in the page too, so the shopper does not lose the
-      // sidebar's scroll position between pages.
-      var pageLink = event.target.closest('.xd-pager__link[href]');
-      if (pageLink) {
-        event.preventDefault();
-        request(pageLink.getAttribute('href'), true);
-        if (results) results.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
     });
 
     // role="checkbox" promises Space toggles it; a link only answers Enter.
@@ -974,6 +1066,7 @@
     syncPriceLabels();
     syncPriceInputs();
     syncBadges();
+    startInfinite();
   })();
 </script>
 
@@ -1002,7 +1095,7 @@
     {
       "type": "range",
       "id": "products_per_page",
-      "label": "Products per page",
+      "label": "Products loaded per scroll",
       "min": 3,
       "max": 36,
       "step": 3,
