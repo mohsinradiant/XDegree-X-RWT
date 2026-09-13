@@ -1149,12 +1149,13 @@ body.gradient {
 /*
   Product cards: one height per row, every part at the same position.
 
-  Grid cell (and slide) stretch -> card fills it -> content fills the card ->
-  the title block takes the slack. The title TEXT stays at the top of its
-  block, so a one-line name and a two-line name start level while price and
-  CTA below them share one baseline. Desktop's hover CTA is absolute against
-  .product-card-content and is unaffected; on touch the in-flow CTA simply
-  follows the price.
+  Grid cell (and slide) stretch -> card fills it -> content fills the card.
+  Titles reserve two lines, so one- and two-line names put the price at the
+  same height, and the price block takes the slack, so a price that wraps
+  (compare-at + discount on a narrow card) pushes nothing out of line and the
+  CTA sits on the card's bottom edge. Desktop's hover CTA is absolute against
+  .product-card-content and is unaffected; on touch the in-flow CTA follows
+  the price block.
 
   Unrated listing cards carry an invisible .product-card-rating.is-empty
   (xd-product-card) so the title does not jump up into the rating's slot.
@@ -1188,6 +1189,12 @@ body.gradient {
 .bestsellers-slider .product-card .product-card-title,
 .xd-product-grid .product-card .product-card-title,
 .trending-slider .product-card .product-card-title {
+  min-height: 2lh;
+}
+
+.bestsellers-slider .product-card .product-card-price,
+.xd-product-grid .product-card .product-card-price,
+.trending-slider .product-card .product-card-price {
   flex-grow: 1;
 }
 
