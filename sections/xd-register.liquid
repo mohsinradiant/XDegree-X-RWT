@@ -1,36 +1,15 @@
 {% comment %}
   Markup copied verbatim from the supplied register.html (.register-wrapper).
 
-  A registration is sent to the store in up to two ways:
+  A registration is sent to the store in two ways:
 
-    1. Always: Shopify's native contact form, so it arrives as a store
-       notification email with every field.
+    1. Shopify's native contact form, so it arrives as a store notification
+       email with every field.
 
-    2. When the shopper ticks the consent box: also as a customer in
-       Admin > Customers, tagged with the "Customer tag" setting plus
-       "Country: ..." / "City: ..." from the dropdowns. Shopify's storefront
-       customer form always subscribes that customer to email marketing, which
-       is why this only happens with the box ticked.
-
-  HOW THE TWO SUBMISSIONS COEXIST
-
-  Both forms are protected by Shopify's hCaptcha, which only accepts forms the
-  theme renders with {% form %} and submits natively - a fetch() is rejected
-  with "Missing CAPTCHA token". So the customer form is a real, visually hidden
-  {% form 'customer' %} whose target is a hidden iframe. Once the captcha is
-  bound, Shopify submits it with the native form.submit(), which honours
-  target, so the page does not navigate.
-
-  On submit (box ticked), a capture-phase listener on window runs before
-  Shopify's own submit handling, holds the contact form, copies the fields
-  into the customer form and submits that into the iframe. When the iframe
-  loads - or after a timeout, so a slow or challenged captcha can never lose
-  the registration email - the contact form is submitted again and goes
-  through Shopify's normal flow.
-
-  The phone number is only copied to the customer when it is in international
-  format (+ and digits): Shopify rejects the whole customer for any other
-  phone format. It always reaches the email.
+    2. When "Registrations API URL" is set: also as a "Paddle registration"
+       metaobject (Admin > Content > Metaobjects), posted to the cPanel
+       backend's api.php?action=register. Fire-and-forget: it never holds up
+       or blocks the contact form.
 {% endcomment %}
 <section class="register-wrapper bg-light">
   <div class="register-container position-relative">
@@ -72,19 +51,6 @@
                   </select>
                 </div>
               {%- endfor -%}
-              {%- if section.settings.save_as_customer -%}
-                <div class="form-check mb-3">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="XdRegisterConsent"
-                    name="contact[{{ section.settings.consent_label | escape }}]"
-                    value="Yes"
-                    data-xd-register="consent"
-                  >
-                  <label class="form-check-label" for="XdRegisterConsent">{{ section.settings.consent_label }}</label>
-                </div>
-              {%- endif -%}
               <div class="form-group">
                 <button type="submit" class="btn w-100 sm-btn product-card-btn submit-btn btn-primary">
                   <span class="text-center">{{ section.settings.button_label }}</span>
@@ -92,22 +58,6 @@
                 </button>
               </div>
             {%- endform -%}
-
-            {%- if section.settings.save_as_customer -%}
-              {%- comment -%}
-                Sibling, not child, of the contact form: forms cannot nest.
-                visually-hidden rather than display:none so the invisible
-                captcha widget Shopify places inside it can still render.
-              {%- endcomment -%}
-              {%- form 'customer', id: 'XdRegisterCustomer', class: 'visually-hidden', novalidate: 'novalidate' -%}
-                <input type="hidden" name="contact[email]" value="">
-                <input type="hidden" name="contact[first_name]" value="">
-                <input type="hidden" name="contact[last_name]" value="">
-                <input type="hidden" name="contact[phone]" value="" disabled>
-                <input type="hidden" name="contact[tags]" value="">
-              {%- endform -%}
-              <iframe name="XdRegisterSink" title="" tabindex="-1" aria-hidden="true" class="visually-hidden"></iframe>
-            {%- endif -%}
           </div>
         </div>
       </div>
@@ -115,87 +65,51 @@
   </div>
 </section>
 
-{%- if section.settings.save_as_customer -%}
+{%- if section.settings.registrations_api_url != blank -%}
   <script>
     (function () {
       var contact = document.getElementById('XdRegisterForm');
-      var customer = document.getElementById('XdRegisterCustomer');
-      var sink = document.querySelector('iframe[name="XdRegisterSink"]');
-      if (!contact || !customer || !sink) return;
+      if (!contact) return;
 
-      var BASE_TAG = {{ section.settings.customer_tag | json }};
-      // Long enough for an invisible captcha round trip; short enough that a
-      // shopper stuck on a captcha challenge still gets their email sent.
-      var WAIT_MS = 20000;
-      var customerDone = false;
+      var API = {{ section.settings.registrations_api_url | json }};
+      var startedAt = Date.now();
+      var sent = false;
 
-      customer.target = 'XdRegisterSink';
-
-      // Bind Shopify's captcha to the hidden form up front: it is otherwise
-      // bound on focus, which a hidden form never receives.
-      if (window.Shopify && window.Shopify.captcha && typeof window.Shopify.captcha.protect === 'function') {
-        window.Shopify.captcha.protect(customer);
+      function value(name) {
+        var el = contact.querySelector('[data-xd-register="' + name + '"]');
+        return el ? String(el.value || '').trim() : '';
       }
 
-      function field(name) {
-        return contact.querySelector('[data-xd-register="' + name + '"]');
-      }
-
-      function clean(value) {
-        // A comma would split one tag into two.
-        return String(value || '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
-      }
-
-      function fillCustomer() {
-        var name = clean(field('name') && field('name').value);
-        var parts = name.split(' ');
-        customer.elements['contact[email]'].value = (field('email') && field('email').value || '').trim();
-        customer.elements['contact[first_name]'].value = parts.shift() || '';
-        customer.elements['contact[last_name]'].value = parts.join(' ');
-
-        var phone = (field('phone') && field('phone').value || '').replace(/[\s().-]/g, '');
-        var phoneInput = customer.elements['contact[phone]'];
-        var international = /^\+\d{8,15}$/.test(phone);
-        phoneInput.value = international ? phone : '';
-        phoneInput.disabled = !international;
-
-        var tags = [BASE_TAG];
-        contact.querySelectorAll('[data-xd-register-tag]').forEach(function (select) {
-          if (select.value) tags.push(clean(select.getAttribute('data-xd-register-tag')) + ': ' + clean(select.value));
-        });
-        customer.elements['contact[tags]'].value = tags.filter(Boolean).join(',');
-      }
-
-      function sendContact() {
-        customerDone = true;
-        if (typeof contact.requestSubmit === 'function') contact.requestSubmit();
-        else contact.submit();
-      }
-
-      // Capture phase on window runs before Shopify's captcha listeners on the
-      // form, so the contact submission can be held until the customer is sent.
       window.addEventListener(
         'submit',
         function (event) {
-          if (event.target !== contact || customerDone) return;
-          var consent = field('consent');
-          if (!consent || !consent.checked) return;
+          // Shopify's captcha can re-submit the form; record it once.
+          if (event.target !== contact || sent) return;
+          sent = true;
 
-          event.preventDefault();
-          event.stopImmediatePropagation();
+          var answers = {};
+          contact.querySelectorAll('[data-xd-register-tag]').forEach(function (select) {
+            if (select.value) answers[select.getAttribute('data-xd-register-tag')] = select.value;
+          });
 
-          fillCustomer();
-          var timer = setTimeout(sendContact, WAIT_MS);
-          sink.addEventListener(
-            'load',
-            function () {
-              clearTimeout(timer);
-              sendContact();
-            },
-            { once: true }
-          );
-          if (typeof customer.requestSubmit === 'function') customer.requestSubmit();
-          else customer.submit();
+          // text/plain keeps this a simple CORS request (no preflight), and
+          // keepalive lets it finish while the page navigates to Shopify's
+          // contact form response.
+          try {
+            fetch(API + (API.indexOf('?') === -1 ? '?' : '&') + 'action=register', {
+              method: 'POST',
+              mode: 'cors',
+              keepalive: true,
+              headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+              body: JSON.stringify({
+                name: value('name'),
+                email: value('email'),
+                phone: value('phone'),
+                answers: answers,
+                started_at: startedAt,
+              }),
+            }).catch(function () {});
+          } catch (error) {}
         },
         true
       );
@@ -214,16 +128,13 @@
     { "type": "text", "id": "phone_label", "label": "Phone placeholder", "default": "Phone No." },
     { "type": "text", "id": "button_label", "label": "Button label", "default": "submit" },
     { "type": "text", "id": "success_text", "label": "Success message", "default": "Thanks - your paddle registration has been received." },
-    { "type": "header", "content": "Save to Customers" },
+    { "type": "header", "content": "Save as metaobject" },
     {
-      "type": "checkbox",
-      "id": "save_as_customer",
-      "label": "Also save registrations as customers",
-      "default": true,
-      "info": "Only when the shopper ticks the consent box. Shopify subscribes these customers to email marketing. Registrations are always emailed to the store as well."
-    },
-    { "type": "text", "id": "consent_label", "label": "Consent checkbox label", "default": "Keep me updated about my paddle and XDegree news" },
-    { "type": "text", "id": "customer_tag", "label": "Customer tag", "default": "paddle-registration", "info": "Plus one tag per dropdown, e.g. \"Country: India\"" }
+      "type": "text",
+      "id": "registrations_api_url",
+      "label": "Registrations API URL",
+      "info": "The cPanel reviews backend, e.g. https://18ink.com/XdegreeRatings/api.php. Every registration is saved under Content > Metaobjects > Paddle registration. Leave blank to turn off."
+    }
   ],
   "blocks": [
     {
