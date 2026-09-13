@@ -29,6 +29,11 @@
     assign head_class = 'text-primary'
     assign note_class = 'text-primary'
     assign eyebrow_class = 'sub-heading'
+    # listing.html's light-grey Trending row has a dark eyebrow; the white
+    # Bestsellers row on index.html keeps the red one.
+    if bg == 'light'
+      assign eyebrow_class = 'sub-heading text-primary'
+    endif
   endif
 
   if section.settings.view_all_link != blank
