@@ -59,33 +59,61 @@
         </div>
         <!-- info -->
         <div class="col-lg-6">
+          {%- liquid
+            # Stars round to the nearest half: product.html draws 4.5 as four
+            # full stars and a half.
+            if rating != blank
+              assign stars = rating | times: 2 | round | divided_by: 2.0
+              assign full_stars = stars | floor
+              assign half_index = 0
+              if stars > full_stars
+                assign half_index = full_stars | plus: 1
+              endif
+            endif
+          -%}
           <div class="d-flex justify-content-between fbf-info__meta">
-            <div class="text-drak-crimson-red fs13 fw500 text-uppercase">{{ series }}</div>
+            <div class="text-drak-crimson-red fs13 heading-font2 fw500 text-uppercase">{{ series }}</div>
             {%- if rating != blank -%}
               <div class="product-review">
                 <div class="review-star">
-                  {%- for i in (1..5) -%}<i class="fa-solid fa-star"></i>{%- endfor -%}
-                  <strong class="d-inline-block ms-2">{{ rating }}</strong>
-                  {%- if rating_count != blank -%}<a href="#">{{ rating_count }} {{ section.settings.reviews_label }}</a>{%- endif -%}
+                  {%- for i in (1..5) -%}
+                    {%- if i <= full_stars -%}<i class="fa-solid fa-star"></i>
+                    {%- elsif i == half_index -%}<i class="fa-duotone fa-solid fa-star-half"></i>
+                    {%- else -%}<i class="fa-regular fa-star"></i>
+                    {%- endif -%}
+                  {%- endfor %} <strong class="d-inline-block ms-2 me-3 fs13">{{ rating }}</strong>
+                  {%- if rating_count != blank %} <a href="#">{{ rating_count }} {{ section.settings.reviews_label }}</a>{%- endif -%}
                 </div>
               </div>
             {%- endif -%}
           </div>
           <h1 class="fbf-info__title heading-font text-primary">{{ product.title }}</h1>
           {%- if tagline != blank -%}
-            <div class="fbf-info__tag-line my-2">{{ tagline }}</div>
+            {%- comment -%}
+              The design separates the tagline's parts with .list-dots spans, so
+              the "a · b · c" text is split on its middle dots.
+            {%- endcomment -%}
+            {%- assign tagline_parts = tagline | split: '·' -%}
+            <div class="fbf-info__tag-line heading-font2 my-2">
+              {%- for part in tagline_parts -%}
+                {{- part | strip -}}
+                {%- unless forloop.last %} <span class="list-dots"></span> {% endunless -%}
+              {%- endfor -%}
+            </div>
           {%- endif -%}
-          <div class="fbf-info__price heading-font" id="XdPrice">
+          <div class="fbf-info__price heading-font2" id="XdPrice">
             <span data-xd-price>{{ v.price | money_without_trailing_zeros }}</span>
-            {%- if on_sale -%}
+            {% if on_sale -%}
               <del data-xd-compare>{{ v.compare_at_price | money_without_trailing_zeros }}</del>
-              <span class="off" data-xd-off>&minus;{{ discount }}{{ section.settings.discount_suffix }}</span>
+              <span class="off heading-font2" data-xd-off>&minus;{{ discount }}{{ section.settings.discount_suffix }}</span>
             {%- else -%}
-              <del data-xd-compare hidden></del><span class="off" data-xd-off hidden></span>
-            {%- endif -%}
+              <del data-xd-compare hidden></del> <span class="off heading-font2" data-xd-off hidden></span>
+            {%- endif %}
           </div>
           {%- if section.settings.tax_note != blank -%}
-            <div class="m-0 fs12 text-primary">{{ section.settings.tax_note }}</div>
+            <p class="m-0 fs13 text-primary heading-font2 free-shipping">
+              {{- section.settings.tax_note | remove: '<p>' | remove: '</p>' -}}
+            </p>
           {%- endif -%}
 
           {%- comment -%}
@@ -103,10 +131,15 @@
                 {%- assign is_color = false -%}
                 {%- assign oname = option.name | downcase -%}
                 {%- if oname contains 'color' or oname contains 'colour' -%}{%- assign is_color = true -%}{%- endif -%}
-                <div class="fbf-info__label fs12 text-uppercase fw600 mt-4 mb-2">
-                  <span class="text-primary">{{ option.name }}</span>
-                  <span data-xd-optlabel="{{ forloop.index0 }}">{{ option.selected_value }}</span>
-                </div>
+                {%- if is_color -%}
+                  <div class="fbf-info__label fs12 text-uppercase fw600 mt-4 mb-2 heading-font2">
+                    <span class="text-primary d-inline-block me-2">{{ option.name }}</span>
+                    <span data-xd-optlabel="{{ forloop.index0 }}">{{ option.selected_value }}</span>
+                  </div>
+                {%- else -%}
+                  {%- comment -%} product.html names the other options without echoing the chosen value. {%- endcomment -%}
+                  <div class="fbf-info__label fs12 text-uppercase text-primary fw600 mt-4 mb-2">{{ option.name }}</div>
+                {%- endif -%}
                 {%- if is_color -%}
                   <div class="d-flex gap-3 flex-wrap">
                     {%- for value in option.values -%}
@@ -148,7 +181,7 @@
                         data-xd-option="{{ forloop.parentloop.index0 }}"
                         {% if value == option.selected_value %}checked{% endif %}
                       >
-                      <label for="{{ uid }}" class="fbf-weight__opt">{{ value }}</label>
+                      <label for="{{ uid }}" class="fbf-weight__opt heading-font2">{{ value }}</label>
                     {%- endfor -%}
                   </div>
                 {%- endif -%}
@@ -165,7 +198,7 @@
               <button
                 type="submit"
                 name="add"
-                class="fbf-cart-btn flex-grow-1"
+                class="fbf-cart-btn flex-grow-1 heading-font2 text-uppercase fw600"
                 data-xd-submit
                 {% if v.available == false %}disabled{% endif %}
               >
@@ -182,7 +215,7 @@
           {%- endform -%}
           </product-form>
 
-          <hr>
+          <hr class="my-4">
           {%- if blurb != blank -%}
             <p class="fbf-info__disc">{{ blurb | strip_html }}</p>
           {%- endif -%}
@@ -270,7 +303,8 @@
         return variant.options.every(function (o, i) { return o === chosen[i]; });
       });
 
-      root.querySelectorAll('[data-xd-optlabel]').forEach(function (el, i) {
+      root.querySelectorAll('[data-xd-optlabel]').forEach(function (el) {
+        var i = Number(el.dataset.xdOptlabel);
         if (chosen[i]) el.textContent = chosen[i];
       });
 

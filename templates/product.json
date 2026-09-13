@@ -64,7 +64,11 @@
             "label": "The Story",
             "source": "description",
             "metafield": "custom.tech_specs",
-            "text": ""
+            "text": "",
+            "image": "shopify://shop_images/image01.jpg",
+            "stat_option": "Thickness",
+            "stat_unit": "mm",
+            "stat_label": "Core Thickness"
           }
         },
         "t2": {
