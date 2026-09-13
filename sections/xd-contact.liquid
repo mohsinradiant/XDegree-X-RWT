@@ -43,6 +43,7 @@
                 assign value = block.settings.value | strip
                 assign href = blank
                 case block.type
+                  when 'email'
                     assign icon = 'fa-regular fa-envelope'
                     if value != blank
                       assign href = 'mailto:' | append: value
@@ -55,6 +56,7 @@
                     if value != blank
                       assign href = value | remove: ' ' | remove: '-' | remove: '(' | remove: ')' | prepend: 'tel:'
                     endif
+                  when 'address'
                     assign icon = 'fa-regular fa-location-dot'
                   else
                     assign icon = block.settings.icon | default: 'fa-regular fa-circle-info'
