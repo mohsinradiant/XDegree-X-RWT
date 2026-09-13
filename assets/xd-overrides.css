@@ -822,3 +822,267 @@ body.gradient {
     padding: 2px 16px 16px;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Product reviews (sections/xd-product-reviews.liquid) - desktop
+
+   The design has no reviews section. Every value below is taken from
+   something it does ship:
+     summary card  - the register form card (.register-container .register-form)
+     review cards  - the product card / light FAQ border, 12px card radius
+     bars          - .form-control fill for the track, brand red for the fill
+     verified      - the price ".off" badge (.fbf-info__price .off)
+     title / body  - .blog-card-title and .blog-card--content p
+     dates         - the breadcrumb link grey
+--------------------------------------------------------------------------- */
+.xd-reviews__summary {
+  border: solid 2px rgb(213 212 212 / 30%);
+  background-color: #ffffff;
+  padding: 40px 30px;
+  border-radius: 12px;
+  transition: opacity 0.2s ease;
+}
+
+.xd-reviews__summary.is-loading {
+  opacity: 0.45;
+}
+
+.xd-reviews__summary .product-review i {
+  font-size: 16px;
+}
+
+.xd-reviews__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid rgb(35 31 32 / 14%);
+}
+
+.xd-reviews__bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.xd-reviews__bar-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 26px;
+}
+
+.xd-reviews__bar-label i {
+  color: #e73132;
+  font-size: 11px;
+}
+
+.xd-reviews__bar {
+  flex: 1 1 auto;
+  height: 6px;
+  border-radius: 50px;
+  background-color: #ededed;
+  overflow: hidden;
+}
+
+.xd-reviews__bar span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background-color: #d50032;
+  transition: width 0.4s ease;
+}
+
+.xd-reviews__bar-count {
+  min-width: 24px;
+  text-align: right;
+}
+
+.xd-reviews__list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: opacity 0.18s ease;
+}
+
+.xd-reviews__list.is-loading {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.xd-review,
+.xd-reviews__empty {
+  background-color: #ffffff;
+  border: 1px solid rgb(35 31 32 / 14%);
+  border-radius: 12px;
+  padding: 24px 28px;
+}
+
+.xd-reviews__empty {
+  padding: 48px 28px;
+  text-align: center;
+  font-size: 14px;
+  color: #534d4d;
+}
+
+.xd-review__date {
+  color: #9a9a9a;
+}
+
+.xd-review__title {
+  font-size: 18px;
+  color: #231f20;
+  margin: 12px 0 6px;
+}
+
+.xd-review__body {
+  font-size: 14px;
+  color: #534d4d;
+  line-height: 1.7;
+  margin: 8px 0 16px;
+  white-space: pre-line;
+}
+
+.xd-review__verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #dcf5dd;
+  color: #328b35;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 9px;
+}
+
+/* The pager is shared with the collection grid, whose links are <a>. Here
+   they are buttons, which bring a grey UA background - restated with the
+   hover and current states so those still win. */
+.xd-reviews button.xd-pager__link {
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.xd-reviews button.xd-pager__link:hover {
+  background-color: #d50032;
+  border-color: #d50032;
+  color: #fff;
+}
+
+.xd-reviews .xd-pager__gap {
+  border-color: transparent;
+}
+
+/* Popup ------------------------------------------------------------------- */
+.xd-review-modal .modal-dialog {
+  max-width: 560px;
+}
+
+.xd-review-modal .modal-content {
+  position: relative;
+  border: 0;
+  border-radius: 12px;
+  padding: 40px 30px;
+}
+
+.xd-review-modal .btn-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 1;
+}
+
+.xd-review-modal textarea.form-control {
+  height: auto;
+  min-height: 140px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  border-radius: 24px;
+  resize: vertical;
+}
+
+.xd-review-modal .form-control.is-invalid {
+  border-color: #d50032;
+  background-image: none;
+}
+
+.xd-field-error {
+  color: #d50032;
+  font-size: 12px;
+  margin: 6px 0 0 20px;
+}
+
+.xd-star-field .xd-field-error {
+  margin-left: 0;
+}
+
+.xd-review-form__message.is-error {
+  color: #d50032;
+}
+
+/* Star picker: inputs run 5..1 in the DOM and are laid out reversed, so
+   "this star and every star before it" is `~` - the siblings that follow. */
+.xd-star-input {
+  display: inline-flex;
+  flex-direction: row-reverse;
+  justify-content: center;
+  gap: 8px;
+}
+
+.xd-star-input input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.xd-star-input label {
+  font-size: 30px;
+  line-height: 1;
+  color: #d9d9d9;
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.xd-star-input label:hover,
+.xd-star-input label:hover ~ label,
+.xd-star-input input:checked ~ label {
+  color: #e73132;
+}
+
+.xd-star-input label:hover {
+  transform: scale(1.08);
+}
+
+.xd-star-input input:focus-visible + label {
+  outline: 2px solid #231f20;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.xd-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.xd-review-modal__success {
+  padding: 12px 0 4px;
+}
+
+.xd-review-modal__success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 20px;
+  border-radius: 50%;
+  background-color: #dcf5dd;
+  color: #328b35;
+  font-size: 26px;
+}
