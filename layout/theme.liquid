@@ -386,7 +386,27 @@
       tabindex="-1"
       data-template="{{ template.name }}"
     >
-      {{ content_for_layout }}
+      {%- liquid
+        assign current_policy = blank
+        if request.page_type == 'policy'
+          for policy in shop.policies
+            if policy.url == request.path
+              assign current_policy = policy
+            endif
+          endfor
+        endif
+      -%}
+      {%- if current_policy != blank -%}
+        {%- render 'xd-policy-page', policy: current_policy -%}
+        {%- comment -%}
+          Shopify's own policy markup is still output - the layout has to render
+          content_for_layout - but hidden, since the design version above
+          carries the same title and body.
+        {%- endcomment -%}
+        <div hidden>{{ content_for_layout }}</div>
+      {%- else -%}
+        {{ content_for_layout }}
+      {%- endif -%}
     </main>
 
     {% sections 'footer-group' %}
