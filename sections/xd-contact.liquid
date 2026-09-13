@@ -59,10 +59,6 @@
                     if value != blank
                       assign href = value | remove: ' ' | remove: '-' | remove: '(' | remove: ')' | prepend: 'tel:'
                     endif
-                  when 'address'
-                    if value == blank
-                      assign value = shop.address.summary
-                    endif
                     assign icon = 'fa-regular fa-location-dot'
                   else
                     assign icon = block.settings.icon | default: 'fa-regular fa-circle-info'
