@@ -218,13 +218,15 @@ body.gradient {
   color: #231f20;
 }
 
-#xd-pane-t4 .metafield-rich_text_field h4, #xd-pane-t5 .metafield-rich_text_field h4 {
+#xd-pane-t4 .metafield-rich_text_field h4, #xd-pane-t5 .metafield-rich_text_field h4,
+.xd-pane--shipping-returns .metafield-rich_text_field h4, .xd-pane--warranty .metafield-rich_text_field h4 {
   border-top: solid 1px #00000020;
   padding-top: 15px;
   margin-top: 15px;
 }
 
-#xd-pane-t4 .metafield-rich_text_field h4:first-of-type, #xd-pane-t5 .metafield-rich_text_field h4:first-of-type,#xd-pane-t5 .metafield-rich_text_field h4:nth-of-type(2) {
+#xd-pane-t4 .metafield-rich_text_field h4:first-of-type, #xd-pane-t5 .metafield-rich_text_field h4:first-of-type,#xd-pane-t5 .metafield-rich_text_field h4:nth-of-type(2),
+.xd-pane--shipping-returns .metafield-rich_text_field h4:first-of-type, .xd-pane--warranty .metafield-rich_text_field h4:first-of-type, .xd-pane--warranty .metafield-rich_text_field h4:nth-of-type(2) {
   border: none;
   padding-top: 0;
   margin-top: 0;
@@ -651,11 +653,13 @@ body.gradient {
 
 /* Metafield tab bodies cannot carry product.html's utility classes: the
    Details & Care heading is .mb-4, the Shipping & Returns ones .fs20.fw600. */
-#xd-pane-t3 h4 {
+#xd-pane-t3 h4,
+.xd-pane--details-care h4 {
   margin-bottom: 1.5rem !important;
 }
 
-#xd-pane-t4 h4 {
+#xd-pane-t4 h4,
+.xd-pane--shipping-returns h4 {
   font-size: 20px !important;
   font-weight: 600 !important;
 }
