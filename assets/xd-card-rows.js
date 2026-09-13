@@ -30,8 +30,8 @@
     // 1. Reset, so every measurement below is of the natural layout.
     cards.forEach(function (card) {
       var title = card.querySelector('.product-card-title');
-      title.style.marginTop = '';
-      title.style.minHeight = '';
+      title.style.removeProperty('margin-top');
+      title.style.removeProperty('min-height');
     });
 
     // 2. Read everything before writing anything.
@@ -57,8 +57,10 @@
       var maxHeight = Math.max.apply(null, row.map(function (c) { return c.height; }));
       row.forEach(function (c) {
         var push = maxOffset - c.offset;
-        if (push > 0.5) c.title.style.marginTop = c.margin + push + 'px';
-        if (maxHeight - c.height > 0.5) c.title.style.minHeight = maxHeight + 'px';
+        // !important: the listing title's margin comes from Bootstrap's
+        // .my-2, which is itself !important and would beat a plain inline style.
+        if (push > 0.5) c.title.style.setProperty('margin-top', c.margin + push + 'px', 'important');
+        if (maxHeight - c.height > 0.5) c.title.style.setProperty('min-height', maxHeight + 'px', 'important');
       });
     });
   }
