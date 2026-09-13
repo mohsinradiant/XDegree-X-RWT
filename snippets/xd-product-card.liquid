@@ -87,7 +87,8 @@
       listing.html grid card: star row instead of the category label, a
       Space Grotesk title with my-2, and a fw500 compare-at price. Stars round
       to the nearest half, which is how the design draws 4.8 (five full) and
-      4.5 (four and a half). Only rendered when the product has a rating.
+      4.5 (four and a half). A product with no rating gets an invisible row of
+      the same height, so titles, prices and CTAs line up across a grid row.
     {%- endcomment -%}
     {%- if show_rating and product.metafields.reviews.rating.value != blank -%}
       {%- liquid
@@ -106,6 +107,10 @@
           {%- else -%}<i class="fa-sharp fa-regular fa-star"></i>
           {%- endif -%}
         {%- endfor %} <span class="d-inline-block ps-2 fs13 fw600">{{ rating }}</span>
+      </div>
+    {%- elsif show_rating -%}
+      <div class="product-card-rating is-empty" aria-hidden="true">
+        {%- for i in (1..5) -%}<i class="fa-sharp fa-regular fa-star"></i>{%- endfor %} <span class="d-inline-block ps-2 fs13 fw600">0</span>
       </div>
     {%- endif -%}
     <h4 class="product-card-title heading-font my-2 fs16 fw500 {{ title_class }}">
