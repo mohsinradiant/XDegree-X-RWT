@@ -181,7 +181,13 @@
             {%- for value_index in value_indices -%}
               {%- liquid
                 assign idx = value_index | plus: 0
-                assign value = filter.values[idx]
+                # Picked by walking the list: filter.values[n] with a computed n
+                # comes back empty.
+                for candidate_value in filter.values
+                  if forloop.index0 == idx
+                    assign value = candidate_value
+                  endif
+                endfor
                 assign label = value.label
                 if prefix != blank
                   assign label = label | remove_first: prefix | remove_first: separator
@@ -246,7 +252,13 @@
               {%- for value_index in value_indices -%}
                 {%- liquid
                   assign idx = value_index | plus: 0
-                  assign value = filter.values[idx]
+                  # Picked by walking the list: filter.values[n] with a computed n
+                  # comes back empty.
+                  for candidate_value in filter.values
+                    if forloop.index0 == idx
+                      assign value = candidate_value
+                    endif
+                  endfor
                   assign label = value.label
                   if prefix != blank
                     assign label = label | remove_first: prefix | remove_first: separator
@@ -314,7 +326,13 @@
             {%- for value_index in value_indices -%}
               {%- liquid
                 assign idx = value_index | plus: 0
-                assign value = filter.values[idx]
+                # Picked by walking the list: filter.values[n] with a computed n
+                # comes back empty.
+                for candidate_value in filter.values
+                  if forloop.index0 == idx
+                    assign value = candidate_value
+                  endif
+                endfor
                 assign label = value.label
                 if prefix != blank
                   assign label = label | remove_first: prefix | remove_first: separator
@@ -361,7 +379,13 @@
             {%- for value_index in value_indices -%}
               {%- liquid
                 assign idx = value_index | plus: 0
-                assign value = filter.values[idx]
+                # Picked by walking the list: filter.values[n] with a computed n
+                # comes back empty.
+                for candidate_value in filter.values
+                  if forloop.index0 == idx
+                    assign value = candidate_value
+                  endif
+                endfor
                 assign label = value.label
                 if prefix != blank
                   assign label = label | remove_first: prefix | remove_first: separator

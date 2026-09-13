@@ -396,10 +396,19 @@
 
                 {%- for group in ordered_groups -%}
                   {%- liquid
+                    assign panel_id = 'facet-' | append: forloop.index
                     assign group_parts = group | split: '~'
                     assign group_kind = group_parts[0]
                     assign filter_index = group_parts[1] | plus: 0
-                    assign filter = collection.filters[filter_index]
+
+                    # Picked by walking the list and matching the position:
+                    # collection.filters[n] with a computed n comes back empty.
+                    assign filter = nil
+                    for candidate_filter in collection.filters
+                      if forloop.index0 == filter_index
+                        assign filter = candidate_filter
+                      endif
+                    endfor
                     assign prefix = group_parts[2] | default: ''
                     assign group_label = group_parts[3]
 
@@ -444,7 +453,6 @@
                       assign show_count = true
                     endif
 
-                    assign panel_id = 'facet-' | append: forloop.index
                   -%}
                   {%- unless is_hidden -%}
                     {%- assign rendered_groups = rendered_groups | plus: 1 -%}
