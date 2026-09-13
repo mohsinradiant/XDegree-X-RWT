@@ -62,7 +62,7 @@
     "xd-reviews": {
       "type": "xd-product-reviews",
       "settings": {
-        "show_without_api": true
+        "api_url": "https://18ink.com/XdegreeRatings/api.php"
       }
     },
     "xd-related": {
