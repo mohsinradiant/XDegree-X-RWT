@@ -615,3 +615,55 @@ body.gradient {
 .filter-box .accordion-button .xd-facet-group-count[hidden] {
   display: none;
 }
+
+/* ---------------------------------------------------------------------------
+   Carried over from the previous xd-main.css copy
+
+   xd-main.css is again a verbatim copy of the current css/main.css. The old
+   copy had drifted from the design (tab bar width, option widths, cart button
+   width, colours...), and that drift is gone. These few edits in it were
+   needed for real store data rather than being design changes, so they live
+   here now.
+--------------------------------------------------------------------------- */
+
+/* Products have images of any shape. The design's main box is 624 x 589
+   around its one hero shot, so the ratio is pinned instead of following the
+   image. */
+.rug-gallery__main {
+  aspect-ratio: 624 / 589;
+  height: auto;
+  width: 100%;
+  min-height: unset;
+  max-height: unset;
+  display: flex;
+}
+
+/* A product can have more thumbs than fit; the strip scrolls without a bar. */
+.fbf-gallery__thumbs {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.fbf-gallery__thumbs::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Metafield tab bodies cannot carry product.html's utility classes: the
+   Details & Care heading is .mb-4, the Shipping & Returns ones .fs20.fw600. */
+#xd-pane-t3 h4 {
+  margin-bottom: 1.5rem !important;
+}
+
+#xd-pane-t4 h4 {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+}
+
+/* Policy and page bodies are admin rich text, so their headings cannot carry
+   privacy-policy.html's .heading-font.text-primary.mb-3.fw700. */
+.privacy-policy-section .xd-rte h4 {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  color: #231f20;
+  margin-bottom: 1rem;
+}
