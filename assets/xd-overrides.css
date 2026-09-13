@@ -669,3 +669,43 @@ body.gradient {
   color: #231f20;
   margin-bottom: 1rem;
 }
+
+/*
+  Register form consent checkbox. Same trap as the filter sidebar above:
+  Dawn's input[type='checkbox'] { width: auto } outranks Bootstrap's
+  .form-check-input size, collapsing the box to a 2px sliver. The label keeps
+  main.css's .form-check-label styling; only the box is restored.
+*/
+.register-form .form-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding-left: 0;
+  min-height: 0;
+}
+
+.register-form .form-check .form-check-input[type='checkbox'] {
+  flex: 0 0 auto;
+  float: none;
+  width: 18px;
+  height: 18px;
+  margin: 0.2em 0 0;
+  border: 1px solid #cfcfcf;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.register-form .form-check .form-check-input[type='checkbox']:checked {
+  background-color: #d50032;
+  border-color: #d50032;
+}
+
+.register-form .form-check .form-check-input[type='checkbox']:focus {
+  border-color: #d50032;
+  box-shadow: 0 0 0 3px rgba(213, 0, 50, 0.15);
+}
+
+.register-form .form-check .form-check-label {
+  cursor: pointer;
+}
