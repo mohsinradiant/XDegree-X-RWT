@@ -43,10 +43,6 @@
                 assign value = block.settings.value | strip
                 assign href = blank
                 case block.type
-                  when 'email'
-                    if value == blank
-                      assign value = shop.email
-                    endif
                     assign icon = 'fa-regular fa-envelope'
                     if value != blank
                       assign href = 'mailto:' | append: value
@@ -97,19 +93,29 @@
             {%- endif -%}
             <div class="social-handles d-flex flex-wrap">
               {%- if settings.social_facebook_link != blank -%}
-                <a href="{{ settings.social_facebook_link }}" target="_blank" rel="noopener" aria-label="Facebook"><i class="transition fab fa-facebook" aria-hidden="true"></i></a>
+                <a href="{{ settings.social_facebook_link }}" target="_blank" rel="noopener" aria-label="Facebook"
+                  ><i class="transition fab fa-facebook" aria-hidden="true"></i
+                ></a>
               {%- endif -%}
               {%- if settings.social_twitter_link != blank -%}
-                <a href="{{ settings.social_twitter_link }}" target="_blank" rel="noopener" aria-label="X"><i class="transition fab fa-x-twitter" aria-hidden="true"></i></a>
+                <a href="{{ settings.social_twitter_link }}" target="_blank" rel="noopener" aria-label="X"
+                  ><i class="transition fab fa-x-twitter" aria-hidden="true"></i
+                ></a>
               {%- endif -%}
               {%- if settings.social_linkedin_link != blank -%}
-                <a href="{{ settings.social_linkedin_link }}" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="transition fab fa-linkedin" aria-hidden="true"></i></a>
+                <a href="{{ settings.social_linkedin_link }}" target="_blank" rel="noopener" aria-label="LinkedIn"
+                  ><i class="transition fab fa-linkedin" aria-hidden="true"></i
+                ></a>
               {%- endif -%}
               {%- if settings.social_youtube_link != blank -%}
-                <a href="{{ settings.social_youtube_link }}" target="_blank" rel="noopener" aria-label="YouTube"><i class="transition fab fa-youtube" aria-hidden="true"></i></a>
+                <a href="{{ settings.social_youtube_link }}" target="_blank" rel="noopener" aria-label="YouTube"
+                  ><i class="transition fab fa-youtube" aria-hidden="true"></i
+                ></a>
               {%- endif -%}
               {%- if settings.social_instagram_link != blank -%}
-                <a href="{{ settings.social_instagram_link }}" target="_blank" rel="noopener" aria-label="Instagram"><i class="transition fab fa-instagram" aria-hidden="true"></i></a>
+                <a href="{{ settings.social_instagram_link }}" target="_blank" rel="noopener" aria-label="Instagram"
+                  ><i class="transition fab fa-instagram" aria-hidden="true"></i
+                ></a>
               {%- endif -%}
             </div>
           </div>
@@ -124,20 +130,47 @@
               <p class="form__message fs14 text-center mb-3">{{ section.settings.success_text }}</p>
             {%- elsif form.errors -%}
               <p class="form__message fs14 text-center mb-3 text-drak-crimson-red">
-                {{ form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email }}
+                {{ form.errors.translated_fields.email | capitalize }}
+                {{ form.errors.messages.email }}
               </p>
             {%- endif -%}
             <div class="form-group mb-3">
-              <input type="text" name="contact[name]" class="form-control" placeholder="{{ section.settings.name_label }}" autocomplete="name" required>
+              <input
+                type="text"
+                name="contact[name]"
+                class="form-control"
+                placeholder="{{ section.settings.name_label }}"
+                autocomplete="name"
+                required
+              >
             </div>
             <div class="form-group mb-3">
-              <input type="email" name="contact[email]" class="form-control" placeholder="{{ section.settings.email_label }}" autocomplete="email" required>
+              <input
+                type="email"
+                name="contact[email]"
+                class="form-control"
+                placeholder="{{ section.settings.email_label }}"
+                autocomplete="email"
+                required
+              >
             </div>
             <div class="form-group mb-3">
-              <input type="tel" name="contact[phone]" class="form-control" placeholder="{{ section.settings.phone_label }}" autocomplete="tel">
+              <input
+                type="tel"
+                name="contact[phone]"
+                class="form-control"
+                placeholder="{{ section.settings.phone_label }}"
+                autocomplete="tel"
+              >
             </div>
             <div class="form-group mb-3">
-              <textarea name="contact[body]" class="form-control" rows="5" placeholder="{{ section.settings.message_label }}" required></textarea>
+              <textarea
+                name="contact[body]"
+                class="form-control"
+                rows="5"
+                placeholder="{{ section.settings.message_label }}"
+                required
+              ></textarea>
             </div>
             <div class="form-group">
               <button type="submit" class="btn w-100 sm-btn product-card-btn submit-btn btn-primary">
@@ -166,7 +199,13 @@
       "info": "Anything typed into the Contact page's own content in the admin is shown below this."
     },
     { "type": "header", "content": "Social icons" },
-    { "type": "checkbox", "id": "show_social", "label": "Show social icons", "default": true, "info": "Uses the links in Theme settings > Social media" },
+    {
+      "type": "checkbox",
+      "id": "show_social",
+      "label": "Show social icons",
+      "default": true,
+      "info": "Uses the links in Theme settings > Social media"
+    },
     { "type": "text", "id": "social_heading", "label": "Social heading", "default": "Follow us on" },
     { "type": "header", "content": "Form" },
     { "type": "text", "id": "form_heading", "label": "Form heading", "default": "Send Us a Message" },
@@ -175,7 +214,12 @@
     { "type": "text", "id": "phone_label", "label": "Phone placeholder", "default": "Phone No." },
     { "type": "text", "id": "message_label", "label": "Message placeholder", "default": "Message" },
     { "type": "text", "id": "button_label", "label": "Button label", "default": "submit" },
-    { "type": "text", "id": "success_text", "label": "Success message", "default": "Thanks for contacting us. We'll get back to you as soon as possible." }
+    {
+      "type": "text",
+      "id": "success_text",
+      "label": "Success message",
+      "default": "Thanks for contacting us. We'll get back to you as soon as possible."
+    }
   ],
   "blocks": [
     {
@@ -184,7 +228,12 @@
       "limit": 1,
       "settings": [
         { "type": "text", "id": "label", "label": "Label", "default": "Email" },
-        { "type": "text", "id": "value", "label": "Email address", "info": "Leave blank to use the store email from Settings > Store details" }
+        {
+          "type": "text",
+          "id": "value",
+          "label": "Email address",
+          "info": "Leave blank to use the store email from Settings > Store details"
+        }
       ]
     },
     {
@@ -193,7 +242,12 @@
       "limit": 1,
       "settings": [
         { "type": "text", "id": "label", "label": "Label", "default": "Phone" },
-        { "type": "text", "id": "value", "label": "Phone number", "info": "Leave blank to use the store phone from Settings > Store details. Hidden when neither is set." }
+        {
+          "type": "text",
+          "id": "value",
+          "label": "Phone number",
+          "info": "Leave blank to use the store phone from Settings > Store details. Hidden when neither is set."
+        }
       ]
     },
     {
@@ -202,7 +256,12 @@
       "limit": 1,
       "settings": [
         { "type": "text", "id": "label", "label": "Label", "default": "Address" },
-        { "type": "textarea", "id": "value", "label": "Address", "info": "Leave blank to use the store address from Settings > Store details" }
+        {
+          "type": "textarea",
+          "id": "value",
+          "label": "Address",
+          "info": "Leave blank to use the store address from Settings > Store details"
+        }
       ]
     },
     {
