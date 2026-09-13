@@ -62,7 +62,47 @@
               role="tabpanel"
             >
               <div class="row text-primary">
-                {%- if block.settings.source == 'description' -%}
+                {%- if block.settings.source == 'description' and block.settings.image != blank -%}
+                  {%- liquid
+                    # product.html "The Story": copy on the left, a photo with a
+                    # stat card on the right. The stat is read from the product's
+                    # own option (Thickness "14mm" -> 14 + mm) so it can never
+                    # contradict the variant picker above, and the card is left
+                    # out for a product that has no such option.
+                    assign stat_value = blank
+                    assign stat_option = block.settings.stat_option | downcase | strip
+                    assign stat_unit = block.settings.stat_unit | downcase | strip
+                    if stat_option != blank
+                      for option in product.options_with_values
+                        assign option_key = option.name | downcase | strip
+                        if option_key == stat_option
+                          assign stat_value = option.selected_value | downcase | remove: stat_unit | strip
+                        endif
+                      endfor
+                    endif
+                  -%}
+                  <div class="col-md-6">{{ body }}</div>
+                  <div class="col-md-6">
+                    <div class="tab-right-image">
+                      <img
+                        src="{{ block.settings.image | image_url: width: 1000 }}"
+                        class="img-fluid"
+                        alt="{{ block.settings.image.alt | escape }}"
+                        width="{{ block.settings.image.width }}"
+                        height="{{ block.settings.image.height }}"
+                      >
+                      {%- if stat_value != blank -%}
+                        <div class="tab-right-image-box">
+                          <div class="heading-font fs49 text-primary lh100 fw600">
+                            {{- stat_value -}}
+                            <span class="text-drak-crimson-red">{{ block.settings.stat_unit }}</span>
+                          </div>
+                          <div class="fs12 text-uppercase text-primary">{{ block.settings.stat_label }}</div>
+                        </div>
+                      {%- endif -%}
+                    </div>
+                  </div>
+                {%- elsif block.settings.source == 'description' -%}
                   {{ body }}
                 {%- else -%}
                   <div class="col-md-12 text-primary">
@@ -108,7 +148,22 @@
           "label": "Metafield (namespace.key)",
           "default": "custom.tech_specs"
         },
-        { "type": "richtext", "id": "text", "label": "Fixed text" }
+        { "type": "richtext", "id": "text", "label": "Fixed text" },
+        {
+          "type": "header",
+          "content": "Side image",
+          "info": "Product description tabs only. Adds the design's image column beside the description."
+        },
+        { "type": "image_picker", "id": "image", "label": "Image" },
+        {
+          "type": "text",
+          "id": "stat_option",
+          "label": "Stat card option name",
+          "info": "The stat card shows the product's selected value for this option, e.g. Thickness",
+          "default": "Thickness"
+        },
+        { "type": "text", "id": "stat_unit", "label": "Stat card unit", "default": "mm" },
+        { "type": "text", "id": "stat_label", "label": "Stat card label", "default": "Core Thickness" }
       ]
     }
   ],
