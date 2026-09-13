@@ -59,6 +59,12 @@
       "type": "xd-product-tabs",
       "settings": {}
     },
+    "xd-reviews": {
+      "type": "xd-product-reviews",
+      "settings": {
+        "api_url": "https://18ink.com/XdegreeRatings/api.php"
+      }
+    },
     "xd-related": {
       "type": "xd-product-showcase",
       "settings": {
@@ -126,6 +132,7 @@
     "xd-breadcrumb",
     "xd-product",
     "xd-tabs",
+    "xd-reviews",
     "xd-related",
     "xd-trust-bar"
   ]

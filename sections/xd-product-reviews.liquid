@@ -1,0 +1,548 @@
+{% comment %}
+  Product reviews: rating summary, paginated reviews and a "Write a review"
+  popup, below the product tabs band.
+
+  The design has no reviews section, so it is assembled from pieces it ships:
+  the section head row (eyebrow, heading, pill button), the card look of the
+  register form, .product-review stars, the price "OFF" badge (for Verified
+  buyer), .form-control fields and the .xd-pager pagination.
+
+  DATA
+
+  Reviews live in Shopify as "Product review" metaobjects and are served by
+  the XDegree reviews API (xdegree-reviews/api.php, on cPanel), whose URL is
+  the "Reviews API URL" setting. The API returns the average, count, per-star
+  distribution and one page of reviews; the popup posts new reviews to it.
+
+  Until that URL is set the section only renders in the theme editor (or with
+  "Show before the API is connected"), so shoppers never see a form that
+  cannot submit. Without the API the summary falls back to the product's
+  reviews.rating / reviews.rating_count metafields.
+{% endcomment %}
+{%- liquid
+  assign api_url = section.settings.api_url | strip
+  assign show_section = false
+  if api_url != blank or section.settings.show_without_api or request.design_mode
+    assign show_section = true
+  endif
+
+  assign fallback_rating = product.metafields.reviews.rating.value.rating | default: 0
+  assign fallback_count = product.metafields.reviews.rating_count.value | default: 0
+  assign fallback_rating = fallback_rating | times: 1.0 | round: 1
+-%}
+{%- if show_section -%}
+  <section
+    class="xd-reviews section-tb-padding96"
+    id="XdReviews-{{ section.id }}"
+    data-api="{{ api_url | escape }}"
+    data-product-id="{{ product.id }}"
+    data-per-page="{{ section.settings.per_page }}"
+  >
+    <div class="container custom-width">
+      <div class="row mb-5 xd-section-head">
+        <div class="col-md-8">
+          <div class="xd-section-head__titles">
+            {%- if section.settings.eyebrow != blank -%}
+              <div class="sub-heading">{{ section.settings.eyebrow }}</div>
+            {%- endif -%}
+            <h3 class="all-heading heading-font text-primary">{{ section.settings.heading }}</h3>
+          </div>
+        </div>
+        <div class="col-md-4 d-flex align-items-center justify-content-md-end xd-section-head__aside">
+          <button
+            type="button"
+            class="heading-font btn btn-primary sm-btn xd-section-head__cta"
+            data-bs-toggle="modal"
+            data-bs-target="#XdReviewModal-{{ section.id }}"
+          >
+            {{ section.settings.write_label }}
+            <span class="btn-icon"><img src="{{ 'rt-icon.svg' | asset_url }}" alt="" width="10" height="10"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-5">
+        <div class="col-lg-4">
+          <div class="xd-reviews__summary{% if api_url != blank %} is-loading{% endif %}" data-xd-summary>
+            <div class="heading-font fs49 text-primary lh100 fw600" data-xd-average>
+              {%- if api_url == blank -%}{{ fallback_rating }}{%- else -%}0.0{%- endif -%}
+            </div>
+            <div class="product-review mt-2">
+              <div class="review-star" data-xd-average-stars>
+                {%- liquid
+                  assign stars = fallback_rating | times: 2 | round | divided_by: 2.0
+                  if api_url != blank
+                    assign stars = 0
+                  endif
+                  assign full_stars = stars | floor
+                  assign half_index = 0
+                  if stars > full_stars
+                    assign half_index = full_stars | plus: 1
+                  endif
+                -%}
+                {%- for i in (1..5) -%}
+                  {%- if i <= full_stars -%}<i class="fa-sharp fa-solid fa-star" aria-hidden="true"></i>
+                  {%- elsif i == half_index -%}<i class="fa-duotone fa-sharp fa-solid fa-star-half" aria-hidden="true"></i>
+                  {%- else -%}<i class="fa-sharp fa-regular fa-star" aria-hidden="true"></i>
+                  {%- endif -%}
+                {%- endfor -%}
+              </div>
+            </div>
+            <p class="fs13 text-primary mt-2 mb-0" data-xd-count>
+              {%- assign shown_count = fallback_count -%}
+              {%- if api_url != blank -%}{%- assign shown_count = 0 -%}{%- endif -%}
+              {{- section.settings.based_on_text | replace: '[count]', shown_count -}}
+            </p>
+            <div class="xd-reviews__bars" data-xd-bars{% if api_url == blank %} hidden{% endif %}>
+              {%- for n in (1..5) -%}
+                {%- assign stars_value = 6 | minus: n -%}
+                <div class="xd-reviews__bar-row">
+                  <span class="fs13 fw600 text-primary xd-reviews__bar-label">
+                    {{- stars_value -}}
+                    <i class="fa-sharp fa-solid fa-star" aria-hidden="true"></i>
+                  </span>
+                  <div class="xd-reviews__bar" role="presentation"><span data-xd-bar="{{ stars_value }}"></span></div>
+                  <span class="fs13 text-primary xd-reviews__bar-count" data-xd-bar-count="{{ stars_value }}">0</span>
+                </div>
+              {%- endfor -%}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-8">
+          <div class="xd-reviews__list" data-xd-list aria-live="polite"></div>
+          <div class="xd-reviews__empty" data-xd-empty hidden>
+            <p class="mb-0">{{ section.settings.empty_text }}</p>
+          </div>
+          <nav class="xd-pager d-flex justify-content-center gap-2 mt-5" data-xd-pager aria-label="{{ section.settings.heading | escape }}" hidden></nav>
+        </div>
+      </div>
+    </div>
+
+    {%- comment -%}
+      Moved to <body> by the script below: an ancestor with a transform (the
+      entrance animations) would otherwise trap the fixed-position popup.
+    {%- endcomment -%}
+    <div
+      class="modal fade xd-review-modal"
+      id="XdReviewModal-{{ section.id }}"
+      tabindex="-1"
+      aria-labelledby="XdReviewModalTitle-{{ section.id }}"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'accessibility.close' | t }}"></button>
+
+          <div data-xd-form-view>
+            <div class="sub-heading text-center">{{ product.title }}</div>
+            <h4 class="text-center fs30 heading-font text-primary fw800 mb-4" id="XdReviewModalTitle-{{ section.id }}">
+              {{- section.settings.modal_heading -}}
+            </h4>
+            <form class="w-100" data-xd-review-form novalidate>
+              <div class="xd-star-field mb-4 text-center">
+                <div class="fs12 text-uppercase fw600 text-primary mb-2" id="XdRatingLabel-{{ section.id }}">
+                  {{- section.settings.rating_label -}}
+                </div>
+                <div class="xd-star-input" role="radiogroup" aria-labelledby="XdRatingLabel-{{ section.id }}">
+                  {%- for n in (1..5) -%}
+                    {%- assign value = 6 | minus: n -%}
+                    <input type="radio" name="rating" id="XdRate{{ value }}-{{ section.id }}" value="{{ value }}">
+                    <label for="XdRate{{ value }}-{{ section.id }}" title="{{ value }}/5">
+                      <i class="fa-sharp fa-solid fa-star" aria-hidden="true"></i>
+                      <span class="visually-hidden">{{ value }}/5</span>
+                    </label>
+                  {%- endfor -%}
+                </div>
+                <div class="xd-field-error" data-xd-error="rating" hidden></div>
+              </div>
+              <div class="form-group mb-3">
+                <input type="text" name="author_name" class="form-control" placeholder="{{ section.settings.name_label }}" maxlength="60" autocomplete="name" required>
+                <div class="xd-field-error" data-xd-error="author_name" hidden></div>
+              </div>
+              <div class="form-group mb-3">
+                <input type="email" name="author_email" class="form-control" placeholder="{{ section.settings.email_label }}" maxlength="120" autocomplete="email" required>
+                <div class="xd-field-error" data-xd-error="author_email" hidden></div>
+              </div>
+              <div class="form-group mb-3">
+                <input type="text" name="title" class="form-control" placeholder="{{ section.settings.title_label }}" maxlength="120">
+              </div>
+              <div class="form-group mb-3">
+                <textarea name="body" class="form-control" rows="5" placeholder="{{ section.settings.body_label }}" maxlength="2000" required></textarea>
+                <div class="xd-field-error" data-xd-error="body" hidden></div>
+              </div>
+              {%- comment -%} Honeypot: hidden from people, filled by bots, rejected by the API. {%- endcomment -%}
+              <div class="xd-hp" aria-hidden="true">
+                <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+              </div>
+              <p class="xd-review-form__message fs14 text-center mb-3" data-xd-form-message role="alert" hidden></p>
+              <button type="submit" class="btn w-100 sm-btn product-card-btn submit-btn btn-primary" data-xd-review-submit>
+                <span class="text-center" data-xd-review-submit-label>{{ section.settings.submit_label }}</span>
+                <span class="btn-icon"><img src="{{ 'rt-icon.svg' | asset_url }}" alt="" width="10" height="10"></span>
+              </button>
+            </form>
+          </div>
+
+          <div class="xd-review-modal__success text-center" data-xd-success-view hidden>
+            <div class="xd-review-modal__success-icon"><i class="fa-sharp fa-solid fa-check" aria-hidden="true"></i></div>
+            <h4 class="fs30 heading-font text-primary fw800 mb-2">{{ section.settings.success_heading }}</h4>
+            <p class="fs14 mb-4" data-xd-success-text>{{ section.settings.success_text }}</p>
+            <button type="button" class="heading-font btn btn-primary sm-btn" data-bs-dismiss="modal">
+              {{ section.settings.close_label }}
+              <span class="btn-icon"><img src="{{ 'rt-icon.svg' | asset_url }}" alt="" width="10" height="10"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="application/json" data-xd-review-strings>
+      {
+        "basedOn": {{ section.settings.based_on_text | json }},
+        "verified": {{ section.settings.verified_label | json }},
+        "loadError": {{ section.settings.load_error_text | json }},
+        "submitLabel": {{ section.settings.submit_label | json }},
+        "sending": {{ section.settings.sending_label | json }},
+        "successText": {{ section.settings.success_text | json }},
+        "notConnected": {{ section.settings.not_connected_text | json }},
+        "genericError": {{ section.settings.generic_error_text | json }},
+        "ratingRequired": {{ section.settings.rating_required_text | json }},
+        "nameRequired": {{ section.settings.name_required_text | json }},
+        "emailRequired": {{ section.settings.email_required_text | json }},
+        "bodyRequired": {{ section.settings.body_required_text | json }},
+        "previous": {{ 'general.pagination.previous' | t | json }},
+        "next": {{ 'general.pagination.next' | t | json }}
+      }
+    </script>
+  </section>
+
+  <script>
+    (function () {
+      var root = document.getElementById('XdReviews-{{ section.id }}');
+      if (!root || root.dataset.xdReady) return;
+      root.dataset.xdReady = 'true';
+
+      var api = root.getAttribute('data-api') || '';
+      var productId = root.getAttribute('data-product-id');
+      var perPage = parseInt(root.getAttribute('data-per-page'), 10) || 5;
+      var strings = JSON.parse(root.querySelector('[data-xd-review-strings]').textContent);
+      var locale = document.documentElement.lang || undefined;
+
+      var summary = root.querySelector('[data-xd-summary]');
+      var list = root.querySelector('[data-xd-list]');
+      var empty = root.querySelector('[data-xd-empty]');
+      var pager = root.querySelector('[data-xd-pager]');
+      var modal = document.getElementById('XdReviewModal-{{ section.id }}');
+      if (modal && modal.parentNode !== document.body) document.body.appendChild(modal);
+
+      function endpoint(params) {
+        return api + (api.indexOf('?') === -1 ? '?' : '&') + params;
+      }
+
+      function escapeHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+
+      // Rounded to the nearest half, as the product info stars are.
+      function starsHtml(value) {
+        var rounded = Math.round(Number(value || 0) * 2) / 2;
+        var html = '';
+        for (var i = 1; i <= 5; i++) {
+          if (i <= Math.floor(rounded)) html += '<i class="fa-sharp fa-solid fa-star" aria-hidden="true"></i>';
+          else if (i - 0.5 === rounded) html += '<i class="fa-duotone fa-sharp fa-solid fa-star-half" aria-hidden="true"></i>';
+          else html += '<i class="fa-sharp fa-regular fa-star" aria-hidden="true"></i>';
+        }
+        return html;
+      }
+
+      function formatDate(iso) {
+        var date = new Date(iso);
+        if (isNaN(date.getTime())) return '';
+        try {
+          return date.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+        } catch (e) {
+          return date.toDateString();
+        }
+      }
+
+      function renderSummary(data) {
+        var count = Number(data.count || 0);
+        var average = Number(data.average || 0);
+        root.querySelector('[data-xd-average]').textContent = average.toFixed(1);
+        root.querySelector('[data-xd-average-stars]').innerHTML = starsHtml(average);
+        root.querySelector('[data-xd-count]').textContent = strings.basedOn.replace('[count]', count);
+        var distribution = data.distribution || {};
+        for (var n = 1; n <= 5; n++) {
+          var value = Number(distribution[n] || 0);
+          var bar = root.querySelector('[data-xd-bar="' + n + '"]');
+          if (bar) bar.style.width = (count ? Math.round((value / count) * 100) : 0) + '%';
+          var label = root.querySelector('[data-xd-bar-count="' + n + '"]');
+          if (label) label.textContent = value;
+        }
+        root.querySelector('[data-xd-bars]').hidden = false;
+        summary.classList.remove('is-loading');
+      }
+
+      function renderReviews(reviews) {
+        list.innerHTML = reviews
+          .map(function (review) {
+            return (
+              '<article class="xd-review">' +
+              '<div class="d-flex justify-content-between align-items-center gap-3">' +
+              '<div class="product-review"><div class="review-star" aria-label="' + review.rating + '/5">' + starsHtml(review.rating) + '</div></div>' +
+              '<time class="fs12 xd-review__date" datetime="' + escapeHtml(review.date) + '">' + escapeHtml(formatDate(review.date)) + '</time>' +
+              '</div>' +
+              (review.title ? '<h4 class="xd-review__title heading-font">' + escapeHtml(review.title) + '</h4>' : '') +
+              '<p class="xd-review__body">' + escapeHtml(review.body) + '</p>' +
+              '<div class="xd-review__author d-flex align-items-center gap-2 flex-wrap">' +
+              '<span class="fs13 fw600 text-primary">' + escapeHtml(review.author) + '</span>' +
+              (review.verified ? '<span class="xd-review__verified heading-font2"><i class="fa-sharp fa-solid fa-circle-check" aria-hidden="true"></i> ' + escapeHtml(strings.verified) + '</span>' : '') +
+              '</div>' +
+              '</article>'
+            );
+          })
+          .join('');
+        empty.hidden = reviews.length > 0;
+      }
+
+      function pagerButton(page, label, text) {
+        return '<button type="button" class="xd-pager__link" data-page="' + page + '"' + (label ? ' aria-label="' + escapeHtml(label) + '"' : '') + '>' + text + '</button>';
+      }
+
+      function renderPager(page, pages) {
+        if (pages <= 1) {
+          pager.hidden = true;
+          pager.innerHTML = '';
+          return;
+        }
+        var html = page > 1 ? pagerButton(page - 1, strings.previous, '&larr;') : '';
+        for (var p = 1; p <= pages; p++) {
+          var edge = p === 1 || p === pages || Math.abs(p - page) <= 1;
+          if (!edge) {
+            if (p === 2 || p === pages - 1) html += '<span class="xd-pager__link xd-pager__gap" aria-hidden="true">&hellip;</span>';
+            continue;
+          }
+          html += p === page
+            ? '<span class="xd-pager__link is-active" aria-current="page">' + p + '</span>'
+            : pagerButton(p, '', p);
+        }
+        if (page < pages) html += pagerButton(page + 1, strings.next, '&rarr;');
+        pager.innerHTML = html;
+        pager.hidden = false;
+      }
+
+      var inFlight = null;
+      function load(page, scroll) {
+        if (!api) {
+          renderReviews([]);
+          return;
+        }
+        if (inFlight) inFlight.abort();
+        var controller = typeof AbortController === 'function' ? new AbortController() : null;
+        inFlight = controller;
+        list.classList.add('is-loading');
+        fetch(endpoint('action=list&product_id=' + encodeURIComponent(productId) + '&page=' + page + '&per_page=' + perPage), {
+          headers: { Accept: 'application/json' },
+          signal: controller ? controller.signal : undefined,
+        })
+          .then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+          })
+          .then(function (data) {
+            renderSummary(data);
+            renderReviews(data.reviews || []);
+            renderPager(Number(data.page || 1), Number(data.pages || 0));
+            if (scroll) root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          })
+          .catch(function (error) {
+            if (error && error.name === 'AbortError') return;
+            summary.classList.remove('is-loading');
+            list.innerHTML = '';
+            empty.hidden = false;
+            empty.querySelector('p').textContent = strings.loadError;
+          })
+          .then(function () {
+            list.classList.remove('is-loading');
+          });
+      }
+
+      pager.addEventListener('click', function (event) {
+        var button = event.target.closest('[data-page]');
+        if (!button) return;
+        load(parseInt(button.getAttribute('data-page'), 10), true);
+      });
+
+      load(1, false);
+
+      /* ---------------------------------------------------------- popup form */
+      if (!modal) return;
+      var form = modal.querySelector('[data-xd-review-form]');
+      var formView = modal.querySelector('[data-xd-form-view]');
+      var successView = modal.querySelector('[data-xd-success-view]');
+      var message = modal.querySelector('[data-xd-form-message]');
+      var submit = modal.querySelector('[data-xd-review-submit]');
+      var submitLabel = modal.querySelector('[data-xd-review-submit-label]');
+      var startedAt = 0;
+
+      function fieldError(name, text) {
+        var holder = form.querySelector('[data-xd-error="' + name + '"]');
+        var control = name === 'rating' ? form.querySelector('.xd-star-input') : form.elements[name];
+        if (holder) {
+          holder.textContent = text || '';
+          holder.hidden = !text;
+        }
+        if (control && control.classList) control.classList.toggle('is-invalid', !!text);
+      }
+
+      function showMessage(text, isError) {
+        message.textContent = text || '';
+        message.hidden = !text;
+        message.classList.toggle('is-error', !!isError);
+      }
+
+      function resetForm() {
+        form.reset();
+        ['rating', 'author_name', 'author_email', 'body'].forEach(function (name) { fieldError(name, ''); });
+        showMessage('', false);
+        formView.hidden = false;
+        successView.hidden = true;
+      }
+
+      modal.addEventListener('show.bs.modal', function () {
+        startedAt = Date.now();
+      });
+      modal.addEventListener('hidden.bs.modal', function () {
+        if (!successView.hidden) resetForm();
+      });
+
+      // A message goes away as soon as its field is touched, not on the next
+      // submit - otherwise a corrected field keeps saying it is wrong.
+      function clearOnEdit(event) {
+        var name = event.target && event.target.name;
+        if (name && form.querySelector('[data-xd-error="' + name + '"]')) fieldError(name, '');
+      }
+      form.addEventListener('input', clearOnEdit);
+      form.addEventListener('change', clearOnEdit);
+
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        showMessage('', false);
+
+        var checked = form.querySelector('input[name="rating"]:checked');
+        var payload = {
+          product_id: productId,
+          rating: checked ? parseInt(checked.value, 10) : 0,
+          author_name: form.elements.author_name.value.trim(),
+          author_email: form.elements.author_email.value.trim(),
+          title: form.elements.title.value.trim(),
+          body: form.elements.body.value.trim(),
+          website: form.elements.website.value,
+          started_at: startedAt,
+        };
+
+        var invalid = false;
+        fieldError('rating', payload.rating ? '' : strings.ratingRequired);
+        fieldError('author_name', payload.author_name.length >= 2 ? '' : strings.nameRequired);
+        fieldError('author_email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.author_email) ? '' : strings.emailRequired);
+        fieldError('body', payload.body.length >= 10 ? '' : strings.bodyRequired);
+        ['rating', 'author_name', 'author_email', 'body'].forEach(function (name) {
+          var holder = form.querySelector('[data-xd-error="' + name + '"]');
+          if (holder && !holder.hidden) invalid = true;
+        });
+        if (invalid) return;
+
+        if (!api) {
+          showMessage(strings.notConnected, true);
+          return;
+        }
+
+        submit.disabled = true;
+        submitLabel.textContent = strings.sending;
+        fetch(endpoint('action=submit'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(payload),
+        })
+          .then(function (response) {
+            return response.json().then(
+              function (json) { return { ok: response.ok, json: json }; },
+              function () { return { ok: false, json: {} }; }
+            );
+          })
+          .then(function (result) {
+            if (result.ok && result.json.ok) {
+              modal.querySelector('[data-xd-success-text]').textContent = result.json.message || strings.successText;
+              formView.hidden = true;
+              successView.hidden = false;
+              if (result.json.status === 'published') load(1, false);
+              return;
+            }
+            var fields = (result.json && result.json.fields) || {};
+            Object.keys(fields).forEach(function (name) { fieldError(name, fields[name]); });
+            showMessage((result.json && result.json.error) || strings.genericError, true);
+          })
+          .catch(function () {
+            showMessage(strings.genericError, true);
+          })
+          .then(function () {
+            submit.disabled = false;
+            submitLabel.textContent = strings.submitLabel;
+          });
+      });
+    })();
+  </script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "XD Product reviews",
+  "enabled_on": { "templates": ["product"] },
+  "settings": [
+    {
+      "type": "text",
+      "id": "api_url",
+      "label": "Reviews API URL",
+      "info": "Full URL of api.php on your server, e.g. https://example.com/reviews/api.php. Until it is set, the section only shows in the theme editor."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_without_api",
+      "label": "Show before the API is connected",
+      "default": false,
+      "info": "Only for previewing the design. Shoppers would see a form that cannot submit."
+    },
+    { "type": "header", "content": "Content" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Customer reviews" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Ratings & Reviews" },
+    { "type": "text", "id": "write_label", "label": "Write review button", "default": "Write a review" },
+    { "type": "range", "id": "per_page", "label": "Reviews per page", "min": 3, "max": 10, "step": 1, "default": 5 },
+    { "type": "text", "id": "based_on_text", "label": "Review count text", "default": "Based on [count] reviews", "info": "[count] is replaced with the number of reviews" },
+    { "type": "text", "id": "verified_label", "label": "Verified buyer badge", "default": "Verified buyer" },
+    { "type": "textarea", "id": "empty_text", "label": "No reviews text", "default": "No reviews yet. Be the first to share your thoughts on this product." },
+    { "type": "text", "id": "load_error_text", "label": "Loading error text", "default": "Reviews couldn't be loaded right now. Please try again later." },
+    { "type": "header", "content": "Review popup" },
+    { "type": "text", "id": "modal_heading", "label": "Popup heading", "default": "Write a Review" },
+    { "type": "text", "id": "rating_label", "label": "Rating label", "default": "Your rating" },
+    { "type": "text", "id": "name_label", "label": "Name placeholder", "default": "Name" },
+    { "type": "text", "id": "email_label", "label": "Email placeholder", "default": "Email (not published)" },
+    { "type": "text", "id": "title_label", "label": "Title placeholder", "default": "Review title (optional)" },
+    { "type": "text", "id": "body_label", "label": "Review placeholder", "default": "Share your experience with this product" },
+    { "type": "text", "id": "submit_label", "label": "Submit button", "default": "submit review" },
+    { "type": "text", "id": "sending_label", "label": "Submitting text", "default": "Sending..." },
+    { "type": "text", "id": "success_heading", "label": "Success heading", "default": "Thank you!" },
+    { "type": "textarea", "id": "success_text", "label": "Success text", "default": "Your review has been received and will appear once it's approved." },
+    { "type": "text", "id": "close_label", "label": "Success close button", "default": "Close" },
+    { "type": "header", "content": "Messages" },
+    { "type": "text", "id": "rating_required_text", "label": "Missing rating", "default": "Please choose a star rating." },
+    { "type": "text", "id": "name_required_text", "label": "Missing name", "default": "Please enter your name." },
+    { "type": "text", "id": "email_required_text", "label": "Invalid email", "default": "Please enter a valid email address." },
+    { "type": "text", "id": "body_required_text", "label": "Review too short", "default": "Please write at least 10 characters." },
+    { "type": "text", "id": "generic_error_text", "label": "Submit error", "default": "Something went wrong. Please try again." },
+    { "type": "text", "id": "not_connected_text", "label": "Not connected", "default": "Reviews are not connected yet." }
+  ],
+  "presets": [{ "name": "XD Product reviews" }]
+}
+{% endschema %}
