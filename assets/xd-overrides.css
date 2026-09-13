@@ -709,3 +709,58 @@ body.gradient {
 .register-form .form-check .form-check-label {
   cursor: pointer;
 }
+
+/* ---------------------------------------------------------------------------
+   Contact page (sections/xd-contact.liquid)
+
+   The design has no contact page. The card below is the design's own
+   `.register-container .register-form` card, value for value, minus the
+   register page's side-image positioning - and minus its mobile -36px pull-up,
+   which there tucks the card under that image and here would overlap the
+   column above.
+--------------------------------------------------------------------------- */
+.xd-contact__card {
+  min-height: 560px;
+  margin-left: auto;
+  margin-right: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+  text-align: left;
+  border: solid 2px rgb(213 212 212 / 30%);
+  background-color: #ffffff;
+  padding: 40px 30px;
+  border-radius: 12px;
+}
+
+/* The one element the design has no pattern for. .form-control is a fixed
+   56px pill; a message box needs height, so it keeps the fill, border and
+   type and trades the pill for a softer radius. */
+.xd-contact__card textarea.form-control {
+  height: auto;
+  min-height: 140px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  border-radius: 24px;
+  resize: vertical;
+}
+
+.xd-contact__intro p:last-child {
+  margin-bottom: 0;
+}
+
+/* Same mobile card treatment as the register form, without the pull-up. */
+@media (max-width: 767.98px) {
+  .xd-contact__card {
+    min-height: 0;
+    padding: var(--xd-sp-4, 24px) 18px;
+    border-radius: 18px;
+  }
+
+  .xd-contact__card .fs30 {
+    margin-bottom: var(--xd-sp-4, 24px) !important;
+    font-size: var(--xd-fs-h4, 22px);
+    line-height: 1.25;
+  }
+}
