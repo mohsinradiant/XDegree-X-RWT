@@ -1074,6 +1074,13 @@ body.gradient {
   padding: 12px 0 4px;
 }
 
+/* .sm-btn is a flex box, so text-center does not move it. */
+.xd-review-modal__success .sm-btn {
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .xd-review-modal__success-icon {
   display: inline-flex;
   align-items: center;

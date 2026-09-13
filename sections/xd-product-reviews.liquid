@@ -418,6 +418,15 @@
         if (!successView.hidden) resetForm();
       });
 
+      // A message goes away as soon as its field is touched, not on the next
+      // submit - otherwise a corrected field keeps saying it is wrong.
+      function clearOnEdit(event) {
+        var name = event.target && event.target.name;
+        if (name && form.querySelector('[data-xd-error="' + name + '"]')) fieldError(name, '');
+      }
+      form.addEventListener('input', clearOnEdit);
+      form.addEventListener('change', clearOnEdit);
+
       form.addEventListener('submit', function (event) {
         event.preventDefault();
         showMessage('', false);
