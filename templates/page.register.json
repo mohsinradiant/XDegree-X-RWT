@@ -38,7 +38,8 @@
         "email_label": "Email",
         "phone_label": "Phone No.",
         "button_label": "submit",
-        "success_text": "Thanks - your paddle registration has been received."
+        "success_text": "Thanks - your paddle registration has been received.",
+        "registrations_api_url": "https://18ink.com/XdegreeRatings/api.php"
       }
     },
     "trust": {
