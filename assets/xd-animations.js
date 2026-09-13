@@ -434,7 +434,9 @@
 
   function initBlog() {
     revealEach($('.blog-listing .row > [class*="col-"]'), { stagger: 0.08 });
-    revealGroup(null, $('.xd-pager'), { stagger: 0 });
+    // The reviews pager ([data-xd-pager]) starts hidden and is filled by JS,
+    // so it is left out of the reveal.
+    revealGroup(null, $('.xd-pager:not([data-xd-pager])'), { stagger: 0 });
   }
 
   function initArticle() {

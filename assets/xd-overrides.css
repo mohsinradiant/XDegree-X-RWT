@@ -1106,3 +1106,75 @@ body.gradient {
   color: #328b35;
   font-size: 26px;
 }
+
+/*
+  Collection infinite scroll (xd-collection-grid). The sentinel under the grid
+  shows a spinner in the pager's red while the next page loads.
+*/
+.xd-infinite {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 40px;
+  margin-top: 3rem;
+}
+
+.xd-infinite__spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: solid 3px rgb(35 31 32 / 14%);
+  border-top-color: #d50032;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.xd-infinite.is-loading .xd-infinite__spinner {
+  opacity: 1;
+  animation: xd-infinite-spin 0.8s linear infinite;
+}
+
+@keyframes xd-infinite-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xd-infinite.is-loading .xd-infinite__spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/*
+  Product cards: one height per row.
+
+  Grid cell (and slide) stretch -> card fills it -> content fills the card.
+  Nothing is reserved up front: xd-card-rows.js lines the rating, title and
+  price up within each visual row, adding space only where a row needs it.
+*/
+.bestsellers-slider.row > [class*='col-'],
+.xd-product-grid > [class*='col-'],
+.trending-slider .swiper-slide {
+  display: flex;
+}
+
+.trending-slider .swiper-slide {
+  height: auto;
+}
+
+.bestsellers-slider .product-card,
+.xd-product-grid .product-card,
+.trending-slider .product-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.bestsellers-slider .product-card .product-card-content,
+.xd-product-grid .product-card .product-card-content,
+.trending-slider .product-card .product-card-content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}

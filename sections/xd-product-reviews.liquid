@@ -224,7 +224,7 @@
 
       var api = root.getAttribute('data-api') || '';
       var productId = root.getAttribute('data-product-id');
-      var perPage = parseInt(root.getAttribute('data-per-page'), 10) || 5;
+      var perPage = parseInt(root.getAttribute('data-per-page'), 10) || 3;
       var strings = JSON.parse(root.querySelector('[data-xd-review-strings]').textContent);
       var locale = document.documentElement.lang || undefined;
 
@@ -518,7 +518,7 @@
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Customer reviews" },
     { "type": "text", "id": "heading", "label": "Heading", "default": "Ratings & Reviews" },
     { "type": "text", "id": "write_label", "label": "Write review button", "default": "Write a review" },
-    { "type": "range", "id": "per_page", "label": "Reviews per page", "min": 3, "max": 10, "step": 1, "default": 5 },
+    { "type": "range", "id": "per_page", "label": "Reviews per page", "min": 3, "max": 10, "step": 1, "default": 3 },
     { "type": "text", "id": "based_on_text", "label": "Review count text", "default": "Based on [count] reviews", "info": "[count] is replaced with the number of reviews" },
     { "type": "text", "id": "verified_label", "label": "Verified buyer badge", "default": "Verified buyer" },
     { "type": "textarea", "id": "empty_text", "label": "No reviews text", "default": "No reviews yet. Be the first to share your thoughts on this product." },
