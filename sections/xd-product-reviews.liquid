@@ -176,8 +176,8 @@
                 <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
               </div>
               <p class="xd-review-form__message fs14 text-center mb-3" data-xd-form-message role="alert" hidden></p>
-              <button type="submit" class="btn w-100 sm-btn product-card-btn submit-btn btn-primary" data-xd-submit>
-                <span class="text-center" data-xd-submit-label>{{ section.settings.submit_label }}</span>
+              <button type="submit" class="btn w-100 sm-btn product-card-btn submit-btn btn-primary" data-xd-review-submit>
+                <span class="text-center" data-xd-review-submit-label>{{ section.settings.submit_label }}</span>
                 <span class="btn-icon"><img src="{{ 'rt-icon.svg' | asset_url }}" alt="" width="10" height="10"></span>
               </button>
             </form>
@@ -383,8 +383,8 @@
       var formView = modal.querySelector('[data-xd-form-view]');
       var successView = modal.querySelector('[data-xd-success-view]');
       var message = modal.querySelector('[data-xd-form-message]');
-      var submit = modal.querySelector('[data-xd-submit]');
-      var submitLabel = modal.querySelector('[data-xd-submit-label]');
+      var submit = modal.querySelector('[data-xd-review-submit]');
+      var submitLabel = modal.querySelector('[data-xd-review-submit-label]');
       var startedAt = 0;
 
       function fieldError(name, text) {
