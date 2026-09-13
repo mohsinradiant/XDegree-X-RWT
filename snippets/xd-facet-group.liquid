@@ -214,7 +214,7 @@
                   endif
                   assign half_index = full_stars | plus: 1
                 -%}
-                <label class="review-star d-block mb-2{% if value.active %} is-active{% endif %}" for="{{ input_id }}">
+                <label class="review-star d-block{% if value.active %} is-active{% endif %}" for="{{ input_id }}">
                   <input
                     type="checkbox"
                     class="visually-hidden"

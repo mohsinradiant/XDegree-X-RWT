@@ -78,7 +78,7 @@
                     <img src="{{ tile_image | image_url: width: 400 }}" loading="lazy" alt="{{ tile_image.alt | default: link.title | escape }}">
                   {%- endif -%}
                 </div>
-                <h4 class="paddles-card-title">{{ link.title | escape }}</h4>
+                <h4 class="paddles-card-title text-uppercase heading-font">{{ link.title | escape }}</h4>
               </a>
             </div>
           {%- endunless -%}
@@ -92,7 +92,7 @@
                   <img src="{{ block.settings.image | image_url: width: 400 }}" loading="lazy" alt="{{ block.settings.image.alt | escape }}">
                 {%- endif -%}
               </div>
-              <h4 class="paddles-card-title">{{ block.settings.title }}</h4>
+              <h4 class="paddles-card-title text-uppercase heading-font">{{ block.settings.title }}</h4>
             </a>
           </div>
         {%- endfor -%}

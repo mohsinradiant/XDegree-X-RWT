@@ -26,7 +26,12 @@
 <section class="fbf-pdp pt-0 py-5" id="XdPdp-{{ section.id }}">
   <div class="container">
     <div class="fbf-gallery-container">
-      <div class="row gx-4">
+      {%- comment -%}
+        gy-5 is not in product.html. It only spaces the two columns once they
+        stack below 992px; side by side the row's negative top margin and the
+        columns' top margin cancel out, so desktop is exactly the design's gx-4.
+      {%- endcomment -%}
+      <div class="row gx-4 gy-5">
         <!-- gallery -->
         <div class="col-lg-6">
           <div class="fbf-gallery position-relative">
