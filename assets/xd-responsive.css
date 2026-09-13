@@ -2612,6 +2612,13 @@ button:focus-visible,
     white-space: nowrap;
   }
 
+  /* product.html's breadcrumb carries .pt-5 (48px) for the desktop layout.
+     Under the sticky mobile header that is dead space, so the wrap keeps the
+     .py-2 it had before. */
+  .breadcrumb-wrap.pt-5 {
+    padding-top: 0.5rem !important;
+  }
+
   /*
     SECTION RHYTHM
 
@@ -2710,7 +2717,7 @@ button:focus-visible,
     font-size: var(--xd-fs-caption) !important;
   }
 
-  .fbf-pdp .m-0.fs12 {
+  .fbf-pdp .free-shipping {
     margin-top: var(--xd-sp-1) !important;
   }
 
@@ -2720,7 +2727,11 @@ button:focus-visible,
     margin-top: var(--xd-sp-1);
   }
 
+  /* main.css lays the tagline out as a flex row, which at phone width
+     squeezes each part into its own wrapped column. As inline text it wraps
+     like a sentence, dots and all. */
   .fbf-info__tag-line {
+    display: block;
     font-size: var(--xd-fs-caption);
     line-height: 1.5;
   }
