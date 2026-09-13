@@ -3007,3 +3007,183 @@ button:focus-visible,
     animation: none;
   }
 }
+
+/* ==========================================================================
+   Product reviews (sections/xd-product-reviews.liquid) - tablet and phone
+   ========================================================================== */
+
+/*
+  Tablet. Once .col-lg-4 stacks, the summary card spans the whole width: the
+  number sat in one corner and the bars ran 680px across. Side by side it is a
+  short band that leads straight into the reviews.
+*/
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .xd-reviews .row.g-5 {
+    --bs-gutter-y: 32px;
+  }
+
+  .xd-reviews__summary {
+    display: grid;
+    grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    column-gap: 40px;
+    align-items: start;
+    padding: 32px;
+  }
+
+  .xd-reviews__summary > [data-xd-average] {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .xd-reviews__summary > .product-review {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .xd-reviews__summary > [data-xd-count] {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .xd-reviews__summary > .xd-reviews__bars {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    align-self: center;
+    margin-top: 0;
+    padding: 0 0 0 40px;
+    border-top: 0;
+    border-left: 1px solid rgb(35 31 32 / 14%);
+  }
+}
+
+/*
+  Phone. The summary becomes a compact header - number beside its stars and
+  count, bars underneath - and cards, type and popup step down to the same
+  tokens and card treatment as the register form on this breakpoint.
+*/
+@media (max-width: 767.98px) {
+  .xd-reviews .row.g-5 {
+    --bs-gutter-y: var(--xd-sp-4);
+  }
+
+  .xd-reviews__summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: var(--xd-sp-3);
+    align-items: center;
+    padding: var(--xd-sp-4) 18px;
+    border-radius: 18px;
+  }
+
+  .xd-reviews__summary > [data-xd-average] {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    font-size: var(--xd-fs-stat);
+  }
+
+  .xd-reviews__summary > .product-review {
+    grid-column: 2;
+    grid-row: 1;
+    margin-top: 0 !important;
+    align-self: end;
+  }
+
+  .xd-reviews__summary > [data-xd-count] {
+    grid-column: 2;
+    grid-row: 2;
+    margin-top: 2px !important;
+    align-self: start;
+    font-size: var(--xd-fs-caption);
+  }
+
+  .xd-reviews__summary .product-review i {
+    font-size: 14px;
+  }
+
+  .xd-reviews__summary > .xd-reviews__bars {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    gap: var(--xd-sp-1);
+    margin-top: var(--xd-sp-4);
+    padding-top: var(--xd-sp-3);
+  }
+
+  .xd-reviews__list {
+    gap: var(--xd-sp-2);
+  }
+
+  .xd-review {
+    padding: 18px 16px;
+  }
+
+  .xd-reviews__empty {
+    padding: var(--xd-sp-5) 18px;
+  }
+
+  .xd-review__date {
+    font-size: var(--xd-fs-micro);
+  }
+
+  .xd-review__title {
+    margin: 10px 0 4px;
+    font-size: var(--xd-fs-lead);
+    line-height: 1.3;
+  }
+
+  .xd-review__body {
+    margin-bottom: var(--xd-sp-2);
+    font-size: var(--xd-fs-small);
+    line-height: 1.65;
+  }
+
+  /* Popup */
+  .xd-review-modal {
+    --bs-modal-margin: var(--xd-m-gutter);
+  }
+
+  .xd-review-modal .modal-content {
+    padding: var(--xd-sp-5) 18px var(--xd-sp-4);
+    border-radius: 18px;
+  }
+
+  .xd-review-modal .btn-close {
+    top: 12px;
+    right: 12px;
+  }
+
+  .xd-review-modal .fs30 {
+    margin-bottom: var(--xd-sp-3) !important;
+    font-size: var(--xd-fs-h4);
+    line-height: 1.2;
+  }
+
+  .xd-review-modal .xd-star-field {
+    margin-bottom: var(--xd-sp-3) !important;
+  }
+
+  .xd-star-input {
+    gap: 10px;
+  }
+
+  .xd-star-input label {
+    font-size: 32px;
+  }
+
+  .xd-review-modal .form-group.mb-3 {
+    margin-bottom: var(--xd-sp-2) !important;
+  }
+
+  .xd-review-modal .form-control {
+    height: 52px;
+  }
+
+  .xd-review-modal textarea.form-control {
+    min-height: 120px;
+  }
+
+  .xd-review-modal .submit-btn {
+    min-height: 52px;
+    padding: 14px 0;
+  }
+}
