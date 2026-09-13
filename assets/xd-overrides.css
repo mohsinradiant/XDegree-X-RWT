@@ -750,6 +750,13 @@ body.gradient {
   margin-bottom: 0;
 }
 
+/* The card's align-items: flex-start shrinks the heading to its text, so a
+   short heading ignored its .text-center. The register heading wraps across
+   the card, which is why it looks centred there. */
+.xd-contact__card > h4 {
+  align-self: stretch;
+}
+
 /* Same mobile card treatment as the register form, without the pull-up. */
 @media (max-width: 767.98px) {
   .xd-contact__card {
