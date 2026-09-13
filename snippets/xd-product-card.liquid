@@ -82,20 +82,45 @@
 {%- endcapture -%}
 {%- capture card_body -%}
   {{ card_cta }}
-  {%- if show_rating and product.metafields.reviews.rating.value != blank -%}
-    {%- assign rating = product.metafields.reviews.rating.value.rating | default: product.metafields.reviews.rating.value -%}
-    <div class="product-card-rating">
-      {%- for i in (1..5) -%}<i class="fa-sharp fa-solid fa-star"></i>{%- endfor -%}
-      <span class="fs15 fw600">{{ rating }}</span>
-    </div>
+  {%- if card_layout == 'listing' -%}
+    {%- comment -%}
+      listing.html grid card: star row instead of the category label, a
+      Space Grotesk title with my-2, and a fw500 compare-at price. Stars round
+      to the nearest half, which is how the design draws 4.8 (five full) and
+      4.5 (four and a half). Only rendered when the product has a rating.
+    {%- endcomment -%}
+    {%- if show_rating and product.metafields.reviews.rating.value != blank -%}
+      {%- liquid
+        assign rating = product.metafields.reviews.rating.value.rating | default: product.metafields.reviews.rating.value
+        assign stars = rating | times: 2 | round | divided_by: 2.0
+        assign full_stars = stars | floor
+        assign half_index = 0
+        if stars > full_stars
+          assign half_index = full_stars | plus: 1
+        endif
+      -%}
+      <div class="product-card-rating">
+        {%- for i in (1..5) -%}
+          {%- if i <= full_stars -%}<i class="fa-sharp fa-solid fa-star"></i>
+          {%- elsif i == half_index -%}<i class="fa-duotone fa-sharp fa-solid fa-star-half"></i>
+          {%- else -%}<i class="fa-sharp fa-regular fa-star"></i>
+          {%- endif -%}
+        {%- endfor %} <span class="d-inline-block ps-2 fs13 fw600">{{ rating }}</span>
+      </div>
+    {%- endif -%}
+    <h4 class="product-card-title heading-font my-2 fs16 fw500 {{ title_class }}">
+      <a class="product-card-link" href="{{ product.url }}">{{ product.title }}</a>
+    </h4>
+    <div class="product-card-price fs16 {{ price_class }} fw700">{{ product.price | money_without_trailing_zeros }} {% if on_sale %}<del class="{{ del_class }} fw500">{{ product.compare_at_price | money_without_trailing_zeros }}</del> <span class="text-drak-crimson-red fs13 fw500">&minus;{{ discount }}%</span>{% endif %}</div>
+  {%- else -%}
+    {%- unless style == 'trending' -%}
+      <div class="product-category">{{ product.type }}</div>
+    {%- endunless -%}
+    <h4 class="product-card-title my-1 fs16 fw500 {{ title_class }}">
+      <a class="product-card-link" href="{{ product.url }}">{{ product.title }}</a>
+    </h4>
+    <div class="product-card-price fs16 {{ price_class }} {{ price_weight }}">{{ product.price | money_without_trailing_zeros }} {% if on_sale %}<del class="{{ del_class }}">{{ product.compare_at_price | money_without_trailing_zeros }}</del> <span class="text-drak-crimson-red fs13 fw500">&minus;{{ discount }}%</span>{% endif %}</div>
   {%- endif -%}
-  {%- unless style == 'trending' -%}
-    <div class="product-category">{{ product.type }}</div>
-  {%- endunless -%}
-  <h4 class="product-card-title my-1 fs16 fw500 {{ title_class }}">
-    <a class="product-card-link" href="{{ product.url }}">{{ product.title }}</a>
-  </h4>
-  <div class="product-card-price fs16 {{ price_class }} {{ price_weight }}">{{ product.price | money_without_trailing_zeros }} {% if on_sale %}<del class="{{ del_class }}">{{ product.compare_at_price | money_without_trailing_zeros }}</del> <span class="text-drak-crimson-red fs13 fw500">&minus;{{ discount }}%</span>{% endif %}</div>
 {%- endcapture -%}
 {%- capture card_overlay -%}
   {%- comment -%}

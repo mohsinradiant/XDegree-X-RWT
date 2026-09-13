@@ -20,7 +20,7 @@
           {%- for block in section.blocks -%}
             <li class="nav-item" role="presentation" {{ block.shopify_attributes }}>
               <button
-                class="nav-link heading-font{% if forloop.first %} active{% endif %}"
+                class="nav-link heading-font2{% if forloop.first %} active{% endif %}"
                 id="xd-tab-{{ block.id }}"
                 data-bs-toggle="tab"
                 data-bs-target="#xd-pane-{{ block.id }}"
