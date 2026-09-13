@@ -1,1 +1,242 @@
-{"sections":{"banner":{"type":"xd-inner-banner","settings":{"image":"shopify:\/\/shop_images\/about-banner.jpg","heading":"About Us","subtext":"Tournament-grade paddles, courts and gear designed with athletes, engineered for the next generation of pickleball."}},"story":{"type":"xd-rich-text","settings":{"eyebrow":"Our story","heading":"Built Different","text":"<p>Xdegree was built by players who refused to settle. We saw a sport growing faster than the equipment serving it - paddles built to a price point, not a standard - and we knew there was a better way. So we started from scratch. We studied the game obsessively, spoke with players at every level, and asked one question relentlessly: what does a paddle truly need to do? The answer became our blueprint, and Xdegree was born from that pursuit.<\/p><p>Every paddle we make is the result of deliberate engineering and genuine passion for the craft. We test materials for feel, not just specification. We refine geometry until the balance feels instinctive in your hand. Performance, durability, comfort, and style aren't trade-offs at Xdegree - they're standards we hold together, because players deserve equipment that works as hard as they do. From your first rally to your most competitive match, precision and confidence should never be a question of budget or experience level.<\/p>","use_page_content":false}},"advantage":{"type":"xd-shop-cards","blocks":{"c1":{"type":"card","settings":{"image":"shopify:\/\/shop_images\/shop01.jpg","tag":"Control","title":"Shop Control Paddles","link_label":"explore now","button_label":"","link":"shopify:\/\/collections\/control-paddles"}},"c2":{"type":"card","settings":{"image":"shopify:\/\/shop_images\/shop02.jpg","tag":"Spin","title":"Shop Spin Paddles","link_label":"explore now","button_label":"","link":"shopify:\/\/collections\/spin-paddles"}},"c3":{"type":"card","settings":{"image":"shopify:\/\/shop_images\/shop03.jpg","tag":"Power","title":"Shop Power Paddles","link_label":"explore now","button_label":"","link":"shopify:\/\/collections\/power-paddles"}}},"block_order":["c1","c2","c3"],"settings":{"eyebrow":"Shop by paddle type","heading":"Find Your Advantage.","description":"Every element optimized dynamically for structural integrity and high-velocity gameplay.","view_all_label":"View all","view_all_link":"shopify:\/\/collections\/all","background":"black"}},"experience":{"type":"xd-shop-cards","blocks":{"c1":{"type":"card","settings":{"image":"shopify:\/\/shop_images\/find.jpg","tag":"Find a store","title":"Find XDegree Near You","button_label":"View Locations","link":""}},"c2":{"type":"card","settings":{"image":"shopify:\/\/shop_images\/gift.jpg","tag":"PROMOTIONS","title":"Birthday Rewards","text":"Create an account and enjoy special birthday offers just for you.","button_label":"CREATE AN ACCOUNT","link":""}},"c3":{"type":"card","settings":{"image":"shopify:\/\/shop_images\/improve.jpg","tag":"SITE FEEDBACK","title":"Help Us Improve","text":"We'd love to hear your thoughts and suggestions.","button_label":"SHARE FEEDBACK","link":""}}},"block_order":["c1","c2","c3"],"settings":{"eyebrow":"YOUR XDEGREE EXPERIENCE","heading":"Support, Rewards & Community","description":"","background":"white"}},"faq":{"type":"xd-faq","blocks":{"q1":{"type":"faq","settings":{"question":"What paddle is best for beginners?","answer":"<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore.<\/p>"}},"q2":{"type":"faq","settings":{"question":"How do I choose the right paddle?","answer":"<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore.<\/p>"}},"q3":{"type":"faq","settings":{"question":"Do you offer a warranty?","answer":"<p>Placement assistance is provided, but a job guarantee is not offered.<\/p>"}},"q4":{"type":"faq","settings":{"question":"How long does shipping take?","answer":"<p>Yes, upgrade options are available based on availability.<\/p>"}},"q5":{"type":"faq","settings":{"question":"What is your return policy?","answer":"<p>The certification is recognized by employers and industry professionals.<\/p>"}},"q6":{"type":"faq","settings":{"question":"Where are your products made?","answer":"<p>Recorded sessions are available for enrolled learners.<\/p>"}}},"block_order":["q1","q2","q3","q4","q5","q6"],"settings":{"background_image":"shopify:\/\/shop_images\/faq-bg.jpg","eyebrow":"FAQ's","heading":"Common Questions","open_first":false}},"trust":{"type":"xd-trust-bar","blocks":{"i1":{"type":"item","settings":{"icon":"shopify:\/\/shop_images\/icon04.png","label":"Tournament Grade Quality","description":"Built for competitive performance and durability."}},"i2":{"type":"item","settings":{"icon":"shopify:\/\/shop_images\/icon05.png","label":"Global Shipping","description":"Fast and secure worldwide product delivery."}},"i3":{"type":"item","settings":{"icon":"shopify:\/\/shop_images\/icon06.png","label":"Professional Court Solutions","description":"Indoor and outdoor court systems for all facilities."}},"i4":{"type":"item","settings":{"icon":"shopify:\/\/shop_images\/icon07.png","label":"Premium Player Support","description":"Expert assistance for players, clubs and institutions."}}},"block_order":["i1","i2","i3","i4"],"settings":{}}},"order":["banner","story","advantage","experience","faq","trust"]}
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "banner": {
+      "type": "xd-inner-banner",
+      "settings": {
+        "image": "shopify://shop_images/about-banner.jpg",
+        "heading": "About Us",
+        "subtext": "Tournament-grade paddles, courts and gear designed with athletes, engineered for the next generation of pickleball."
+      }
+    },
+    "story": {
+      "type": "xd-rich-text",
+      "settings": {
+        "eyebrow": "Our story",
+        "heading": "Built Different",
+        "text": "<p>Xdegree was built by players who refused to settle. We saw a sport growing faster than the equipment serving it - paddles built to a price point, not a standard - and we knew there was a better way. So we started from scratch. We studied the game obsessively, spoke with players at every level, and asked one question relentlessly: what does a paddle truly need to do? The answer became our blueprint, and Xdegree was born from that pursuit.</p><p>Every paddle we make is the result of deliberate engineering and genuine passion for the craft. We test materials for feel, not just specification. We refine geometry until the balance feels instinctive in your hand. Performance, durability, comfort, and style aren't trade-offs at Xdegree - they're standards we hold together, because players deserve equipment that works as hard as they do. From your first rally to your most competitive match, precision and confidence should never be a question of budget or experience level.</p>",
+        "use_page_content": false
+      }
+    },
+    "advantage": {
+      "type": "xd-shop-cards",
+      "blocks": {
+        "c1": {
+          "type": "card",
+          "settings": {
+            "image": "shopify://shop_images/shop01.jpg",
+            "tag": "Control",
+            "title": "Shop Control Paddles",
+            "link_label": "explore now",
+            "button_label": "",
+            "link": "shopify://collections/control-paddles"
+          }
+        },
+        "c2": {
+          "type": "card",
+          "settings": {
+            "image": "shopify://shop_images/shop02.jpg",
+            "tag": "Spin",
+            "title": "Shop Spin Paddles",
+            "link_label": "explore now",
+            "button_label": "",
+            "link": "shopify://collections/spin-paddles"
+          }
+        },
+        "c3": {
+          "type": "card",
+          "settings": {
+            "image": "shopify://shop_images/shop03.jpg",
+            "tag": "Power",
+            "title": "Shop Power Paddles",
+            "link_label": "explore now",
+            "button_label": "",
+            "link": "shopify://collections/power-paddles"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3"
+      ],
+      "settings": {
+        "eyebrow": "Shop by paddle type",
+        "heading": "Find Your Advantage.",
+        "description": "Every element optimized dynamically for structural integrity and high-velocity gameplay.",
+        "view_all_label": "View all",
+        "view_all_link": "shopify://collections/all",
+        "background": "black"
+      }
+    },
+    "experience": {
+      "type": "xd-shop-cards",
+      "blocks": {
+        "c1": {
+          "type": "card",
+          "settings": {
+            "image": "shopify://shop_images/find.jpg",
+            "tag": "Find a store",
+            "title": "Find XDegree Near You",
+            "button_label": "View Locations",
+            "link": ""
+          }
+        },
+        "c2": {
+          "type": "card",
+          "settings": {
+            "image": "shopify://shop_images/gift.jpg",
+            "tag": "PROMOTIONS",
+            "title": "Birthday Rewards",
+            "text": "Create an account and enjoy special birthday offers just for you.",
+            "button_label": "CREATE AN ACCOUNT",
+            "link": ""
+          }
+        },
+        "c3": {
+          "type": "card",
+          "settings": {
+            "image": "shopify://shop_images/improve.jpg",
+            "tag": "SITE FEEDBACK",
+            "title": "Help Us Improve",
+            "text": "We'd love to hear your thoughts and suggestions.",
+            "button_label": "SHARE FEEDBACK",
+            "link": ""
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3"
+      ],
+      "settings": {
+        "eyebrow": "YOUR XDEGREE EXPERIENCE",
+        "heading": "Support, Rewards & Community",
+        "description": "",
+        "background": "white"
+      }
+    },
+    "faq": {
+      "type": "xd-faq",
+      "blocks": {
+        "q1": {
+          "type": "faq",
+          "settings": {
+            "question": "What paddle is best for beginners?",
+            "answer": "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore.</p>"
+          }
+        },
+        "q2": {
+          "type": "faq",
+          "settings": {
+            "question": "How do I choose the right paddle?",
+            "answer": "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore.</p>"
+          }
+        },
+        "q3": {
+          "type": "faq",
+          "settings": {
+            "question": "Do you offer a warranty?",
+            "answer": "<p>Placement assistance is provided, but a job guarantee is not offered.</p>"
+          }
+        },
+        "q4": {
+          "type": "faq",
+          "settings": {
+            "question": "How long does shipping take?",
+            "answer": "<p>Yes, upgrade options are available based on availability.</p>"
+          }
+        },
+        "q5": {
+          "type": "faq",
+          "settings": {
+            "question": "What is your return policy?",
+            "answer": "<p>The certification is recognized by employers and industry professionals.</p>"
+          }
+        },
+        "q6": {
+          "type": "faq",
+          "settings": {
+            "question": "Where are your products made?",
+            "answer": "<p>Recorded sessions are available for enrolled learners.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "q1",
+        "q2",
+        "q3",
+        "q4",
+        "q5",
+        "q6"
+      ],
+      "settings": {
+        "background_image": "shopify://shop_images/faq-bg.jpg",
+        "eyebrow": "FAQ's",
+        "heading": "Common Questions",
+        "open_first": false
+      }
+    },
+    "trust": {
+      "type": "xd-trust-bar",
+      "blocks": {
+        "i1": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon04.png",
+            "label": "Tournament Grade Quality",
+            "description": "Built for competitive performance and durability."
+          }
+        },
+        "i2": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon05.png",
+            "label": "Global Shipping",
+            "description": "Fast and secure worldwide product delivery."
+          }
+        },
+        "i3": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon06.png",
+            "label": "Professional Court Solutions",
+            "description": "Indoor and outdoor court systems for all facilities."
+          }
+        },
+        "i4": {
+          "type": "item",
+          "settings": {
+            "icon": "shopify://shop_images/icon07.png",
+            "label": "Premium Player Support",
+            "description": "Expert assistance for players, clubs and institutions."
+          }
+        }
+      },
+      "block_order": [
+        "i1",
+        "i2",
+        "i3",
+        "i4"
+      ],
+      "settings": {}
+    }
+  },
+  "order": [
+    "banner",
+    "story",
+    "advantage",
+    "experience",
+    "faq",
+    "trust"
+  ]
+}

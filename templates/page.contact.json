@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "banner": {
@@ -15,21 +24,21 @@
           "type": "email",
           "settings": {
             "label": "Email",
-            "value": ""
+            "value": "Placeholder email, please update"
           }
         },
         "phone": {
           "type": "phone",
           "settings": {
             "label": "Phone",
-            "value": ""
+            "value": "Placeholder phone, please update"
           }
         },
         "address": {
           "type": "address",
           "settings": {
             "label": "Address",
-            "value": ""
+            "value": "Placeholder address, please update"
           }
         }
       },
@@ -38,7 +47,20 @@
         "phone",
         "address"
       ],
-      "settings": {}
+      "settings": {
+        "eyebrow": "Get in touch",
+        "heading": "We're Here to Help",
+        "intro": "<p>Questions about an order, a paddle, a warranty claim or a court installation? Send us a message and our team will get back to you.</p>",
+        "show_social": true,
+        "social_heading": "Follow us on",
+        "form_heading": "Send Us a Message",
+        "name_label": "Name",
+        "email_label": "Email",
+        "phone_label": "Phone No.",
+        "message_label": "Message",
+        "button_label": "submit",
+        "success_text": "Thanks for contacting us. We'll get back to you as soon as possible."
+      }
     },
     "faq": {
       "type": "xd-faq",
