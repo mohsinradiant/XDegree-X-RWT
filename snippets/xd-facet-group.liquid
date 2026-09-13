@@ -282,7 +282,12 @@
                       {% if value.active %}checked{% endif %}
                       {% if value.count == 0 and value.active == false %}disabled{% endif %}
                     >
-                    <label class="form-check-label filter-link d-flex justify-content-between align-items-center w-100" for="{{ input_id }}">
+                    {%- comment -%}
+                      The design only lays a label out as a spread row when it
+                      carries a count (listing.html "Category"); plain checkbox
+                      rows are a bare .form-check-label.filter-link.
+                    {%- endcomment -%}
+                    <label class="form-check-label filter-link{% if show_count %} d-flex justify-content-between align-items-center w-100{% endif %}" for="{{ input_id }}">
                       {{ label | escape }}
                       {%- if show_count -%}
                         <span data-xd-count-text>{{ value.count }}</span>
