@@ -84,6 +84,8 @@ body.gradient {
   dim, no blur, and nothing catching taps outside it.
 */
 .offcanvas-backdrop:empty,
+/* Same for Bootstrap's modal backdrop (the review popup): no dim, no blur. */
+.modal-backdrop:empty,
 /*
   Same trap: the product card's click overlay is an empty <a> stretched over
   the card, and `a:empty` above hid it - so tapping the card image or price did
@@ -977,6 +979,17 @@ body.gradient {
 /* Popup ------------------------------------------------------------------- */
 .xd-review-modal .modal-dialog {
   max-width: 560px;
+}
+
+/* Dark, blurred page behind the popup. */
+.modal-backdrop {
+  background-color: rgb(0 0 0 / 60%);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.modal-backdrop.show {
+  opacity: 1;
 }
 
 .xd-review-modal .modal-content {
