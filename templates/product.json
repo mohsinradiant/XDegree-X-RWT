@@ -61,7 +61,9 @@
     },
     "xd-reviews": {
       "type": "xd-product-reviews",
-      "settings": {}
+      "settings": {
+        "show_without_api": true
+      }
     },
     "xd-related": {
       "type": "xd-product-showcase",
