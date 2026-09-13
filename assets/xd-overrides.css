@@ -412,7 +412,8 @@ body.gradient {
   color: #d50032;
 }
 
-.filter-box .form-check-input:disabled+.filter-link {
+.filter-box .form-check-input:disabled+.filter-link,
+.filter-box .accordion-item .accordion-body ul li a.filter-link.is-disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
