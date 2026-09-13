@@ -1147,18 +1147,11 @@ body.gradient {
 }
 
 /*
-  Product cards: one height per row, every part at the same position.
+  Product cards: one height per row.
 
   Grid cell (and slide) stretch -> card fills it -> content fills the card.
-  Titles reserve two lines, so one- and two-line names put the price at the
-  same height, and the price block takes the slack, so a price that wraps
-  (compare-at + discount on a narrow card) pushes nothing out of line and the
-  CTA sits on the card's bottom edge. Desktop's hover CTA is absolute against
-  .product-card-content and is unaffected; on touch the in-flow CTA follows
-  the price block.
-
-  Unrated listing cards carry an invisible .product-card-rating.is-empty
-  (xd-product-card) so the title does not jump up into the rating's slot.
+  Nothing is reserved up front: xd-card-rows.js lines the rating, title and
+  price up within each visual row, adding space only where a row needs it.
 */
 .bestsellers-slider.row > [class*='col-'],
 .xd-product-grid > [class*='col-'],
@@ -1184,30 +1177,4 @@ body.gradient {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-}
-
-.bestsellers-slider .product-card .product-card-title,
-.xd-product-grid .product-card .product-card-title,
-.trending-slider .product-card .product-card-title {
-  min-height: 2lh;
-}
-
-.bestsellers-slider .product-card .product-card-price,
-.xd-product-grid .product-card .product-card-price,
-.trending-slider .product-card .product-card-price {
-  flex-grow: 1;
-}
-
-.product-card-rating.is-empty {
-  visibility: hidden;
-}
-
-/* Dawn's div:empty { display: none } would drop a blank product type and
-   lift that card's title above its neighbours'. */
-.product-card .product-category:empty {
-  display: block;
-}
-
-.product-card .product-category:empty::before {
-  content: '\00a0';
 }
