@@ -1,7 +1,7 @@
 {% comment %}
   Markup copied verbatim from the supplied register.html (.register-wrapper).
 
-  A registration is sent to the store in up to two ways:
+  A registration is sent to the store in up to three ways:
 
     1. Always: Shopify's native contact form, so it arrives as a store
        notification email with every field.
@@ -11,6 +11,11 @@
        "Country: ..." / "City: ..." from the dropdowns. Shopify's storefront
        customer form always subscribes that customer to email marketing, which
        is why this only happens with the box ticked.
+
+    3. When "Registrations API URL" is set: also as a "Paddle registration"
+       metaobject (Admin > Content > Metaobjects), posted to the cPanel
+       backend's api.php?action=register. Fire-and-forget: it never holds up
+       or blocks the two submissions above.
 
   HOW THE TWO SUBMISSIONS COEXIST
 
@@ -114,6 +119,66 @@
     </div>
   </div>
 </section>
+
+{%- if section.settings.registrations_api_url != blank -%}
+  {%- comment -%}
+    Must come before the customer script below: both listen for submit in the
+    capture phase on window, and that one stops propagation while it holds the
+    contact form.
+  {%- endcomment -%}
+  <script>
+    (function () {
+      var contact = document.getElementById('XdRegisterForm');
+      if (!contact) return;
+
+      var API = {{ section.settings.registrations_api_url | json }};
+      var startedAt = Date.now();
+      var sent = false;
+
+      function value(name) {
+        var el = contact.querySelector('[data-xd-register="' + name + '"]');
+        return el ? String(el.value || '').trim() : '';
+      }
+
+      window.addEventListener(
+        'submit',
+        function (event) {
+          // The contact form can be submitted twice (held, then released by
+          // the customer script); record the registration once.
+          if (event.target !== contact || sent) return;
+          sent = true;
+
+          var answers = {};
+          contact.querySelectorAll('[data-xd-register-tag]').forEach(function (select) {
+            if (select.value) answers[select.getAttribute('data-xd-register-tag')] = select.value;
+          });
+          var consent = contact.querySelector('[data-xd-register="consent"]');
+
+          // text/plain keeps this a simple CORS request (no preflight), and
+          // keepalive lets it finish while the page navigates to Shopify's
+          // contact form response.
+          try {
+            fetch(API + (API.indexOf('?') === -1 ? '?' : '&') + 'action=register', {
+              method: 'POST',
+              mode: 'cors',
+              keepalive: true,
+              headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+              body: JSON.stringify({
+                name: value('name'),
+                email: value('email'),
+                phone: value('phone'),
+                answers: answers,
+                consent: Boolean(consent && consent.checked),
+                started_at: startedAt,
+              }),
+            }).catch(function () {});
+          } catch (error) {}
+        },
+        true
+      );
+    })();
+  </script>
+{%- endif -%}
 
 {%- if section.settings.save_as_customer -%}
   <script>
@@ -223,7 +288,14 @@
       "info": "Only when the shopper ticks the consent box. Shopify subscribes these customers to email marketing. Registrations are always emailed to the store as well."
     },
     { "type": "text", "id": "consent_label", "label": "Consent checkbox label", "default": "Keep me updated about my paddle and XDegree news" },
-    { "type": "text", "id": "customer_tag", "label": "Customer tag", "default": "paddle-registration", "info": "Plus one tag per dropdown, e.g. \"Country: India\"" }
+    { "type": "text", "id": "customer_tag", "label": "Customer tag", "default": "paddle-registration", "info": "Plus one tag per dropdown, e.g. \"Country: India\"" },
+    { "type": "header", "content": "Save as metaobject" },
+    {
+      "type": "text",
+      "id": "registrations_api_url",
+      "label": "Registrations API URL",
+      "info": "The cPanel reviews backend, e.g. https://18ink.com/XdegreeRatings/api.php. Every registration is saved under Content > Metaobjects > Paddle registration. Leave blank to turn off."
+    }
   ],
   "blocks": [
     {
